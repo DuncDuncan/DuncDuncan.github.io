@@ -8,6 +8,37 @@
   <link href="counter.css" rel="stylesheet" type="text/css" />
 </head>
 
+<style>
+html, body {
+  height: calc(100% - 5px);
+  margin: 5;
+  width: calc(100% - 5px);
+  font-family: roboto;
+  color: white;
+  background-color: rgb(30,30,30);
+  font-size: 100px;
+  text-align: right;
+  //overflow: hidden;
+  
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.text {
+  float: left;
+  display: block;
+}
+
+* {
+  margin: 0
+}
+</style>
+
 <body>
   <div style="width:15%; font-size:20px; float:left; display:block">
     <div id="records" class="text" style="width:100%; font-size:20px"></div>
