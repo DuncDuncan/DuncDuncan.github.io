@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>counter</title>
+  <link href="counter.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+  <div style="width:15%; font-size:20px; float:left; display:block">
+    <div id="records" class="text" style="width:100%; font-size:20px"></div>
+    <p id="tot" class="text" style="width:100%; float:left; font-size:20px;"></p>
+    <p id="mean" class="text" style="width:100%; float:left; font-size:20px;"></p>
+  </div>
+  <p id="count" class="text" style="height:100px; width:85%; float:right">tap to count</p>
+  <div id="btn" style="height: calc(100% - 100px); width:85%; float:right;"></div>
+  
+
+  <audio id="audio" src="https://duncduncan.github.io/C5.wav" type="audio/mpeg">
+    
+<script>
+var count = 0
+var tot = 0
+saves = []
+var x = document.getElementById("audio")
+var meow = false
+x.load()
+
+function plusOne() {
+  count += 1;
+  document.getElementById("count").innerText = count;
+  //document.getElementById("tot").innerText = tot+count;
+  var x = document.getElementById("audio");
+  x.currentTime = 0;
+  x.play();
+}
+
+function zero() {
+  var save = "<p>"+count+"</p>"
+  document.getElementById("records").insertAdjacentHTML("beforeend", save);
+  tot += count
+  saves.push(count)
+  count = 0;
+  document.getElementById("count").innerText = " ";
+  if (meow) {
+    document.getElementById("tot").innerText = 'Σ '+tot;
+    document.getElementById("tot").style.borderTop="1px solid"
+    document.getElementById("mean").innerText =  'x̄ '+Math.round(tot/(saves.length));
+    document.getElementById("mean").style.borderTop="1px solid"
+  }
+  meow=true
+}
+
+
+
+document.getElementById("btn").addEventListener("click", plusOne)
+document.getElementById("count").addEventListener("dblclick", zero)
+
+
+</script>
+
+
+
+  <script>
+    console.log('meow')
+    
+    let touchStartX = 0;
+    let touchEndX = 0;
+    window.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+    });
+    window.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].clientX;
+      let swipeDistance = touchEndX - touchStartX;
+      if (swipeDistance > 100) {
+        console.log('Swipe Right');
+        //document.body.style.backgroundColor = "red";
+        window.location.href = "gap.html";
+      } else if (swipeDistance < -100) {
+        console.log('Swipe Left');
+        //document.body.style.backgroundColor = "blue";
+        window.location.href = "index.html";
+      }
+    });
+  </script>
+
+</body>
+
+</html>
