@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>gap calc</title>
+  <link href="style.css" rel="stylesheet" type="text/css" />
+</head>
+
+<style>
+  html, body {
+  height: 100%;
+  width: calc(100% - 5px);
+  margin: 10;
+  background-color: grey
+}
+
+* {
+  font-family: roboto;
+  color: white
+}
+
+.container {
+  width: 95%;
+  max-width: 500px;
+  //background-color: red;
+}
+
+.container2 {
+  //height: 50px;
+  //width: 100%;
+  //background-color: red;
+  //margin-bottom: 100px
+}
+
+.result {
+  height: 20px;
+  width: 100%;
+  //background-color: yellow;
+  float: left;
+  display: block;
+  //margin-bottom: 50px;
+  font-size: 25px;
+  text-align: right;
+  //border-bottom: 1px solid;
+}
+
+.item {
+  height: 29px;
+  width: 70%;
+  //background-color: blue;
+  float: left;
+  display: block;
+  margin-bottom: 20px;
+  font-size: 20px;
+  text-align: left;
+  //border-bottom: 1px solid;
+  overflow: hidden;
+}
+
+.button {
+  //height: 50px;
+  width: 10%;
+  //background-color: green;
+  float: left;
+  display: block;
+  margin-bottom: 20px;
+  font-size: 25px;
+  text-align: center;
+  cursor: grab;
+  user-select: none;
+  //border-bottom: 1px solid;
+}
+
+.quantity {
+  //height: 50px;
+  width: 10%;
+  //background-color: purple;
+  float: left;
+  display: block;
+  margin-bottom: 20px;
+  font-size: 25px;
+  text-align: center;
+  //border-bottom: 1px solid;
+}
+</style>
+  
+<body>
+
+  <div class="container">
+    <p class="result" id='result'>0mm</p>
+    <div class="container2">
+      <p class="item">Post 110mm</p>
+      <p class="quantity" id="postq">0</p>
+      <p class="button" id="0-">-</p>
+      <p class="button" id="0+">+</p>
+    </div>
+    <div class="container2">
+      <p class="item">Ped Gate 1420mm</p>
+      <p class="quantity" id="railq">0</p>
+      <p class="button" id="1-">-</p>
+      <p class="button" id="1+">+</p>
+    </div>
+    <div class="container2">
+      <p class="item">12ft Gate 3850mm</p>
+      <p class="quantity" id="big gateq">0</p>
+      <p class="button" id="4-">-</p>
+      <p class="button" id="4+">+</p>
+    </div>
+    <div class="container2">
+      <p class="item">15ft Gate 4890mm</p>
+      <p class="quantity" id="15ft gateq">0</p>
+      <p class="button" id="5-">-</p>
+      <p class="button" id="5+">+</p>
+    </div>
+    <div class="container2">
+      <p class="item">40mm gap</p>
+      <p class="quantity" id="gateq">0</p>
+      <p class="button" id="2-">-</p>
+      <p class="button" id="2+">+</p>
+    </div>
+    <div class="container2">
+      <p class="item">1000mm gap</p>
+      <p class="quantity" id="gap1mq">0</p>
+      <p class="button" id="3-">-</p>
+      <p class="button" id="3+">+</p>
+    </div>
+  </div>
+  
+<script>
+
+data = {
+  'result': 0, 
+  'post': {'price':110, 'quantity':0}, 
+  'rail': {'price': 1420, 'quantity':0}, 
+  'gate': {'price': 40, 'quantity':0},
+  'gap1m': {'price': 1000, 'quantity':0},
+  'big gate': {'price': 3850, 'quantity':0},
+  '15ft gate': {'price': 4890, 'quantity':0}
+}
+
+function mainfunc(item, operation) {
+  console.log(item)
+  if (operation==1 || operation==-1 && data[item]['quantity']!=0) {
+    data[item]['quantity'] += 1 * operation
+    data['result'] += data[item]['price'] * operation
+    console.log(data)
+    document.getElementById(item+'q').innerText = data[item]['quantity']
+    document.getElementById('result').innerText = data['result']+'mm'
+  }
+}
+
+
+
+document.getElementById('0+').addEventListener("click", function() {mainfunc('post', 1);});
+document.getElementById('0-').addEventListener("click", function() {mainfunc('post', -1);});
+
+document.getElementById('1+').addEventListener("click", function() {mainfunc('rail', 1);});
+document.getElementById('1-').addEventListener("click", function() {mainfunc('rail', -1);});
+
+document.getElementById('2+').addEventListener("click", function() {mainfunc('gate', 1);});
+document.getElementById('2-').addEventListener("click", function() {mainfunc('gate', -1);});
+
+document.getElementById('3+').addEventListener("click", function() {mainfunc('gap1m', 1);});
+document.getElementById('3-').addEventListener("click", function() {mainfunc('gap1m', -1);});
+
+document.getElementById('4+').addEventListener("click", function() {mainfunc('big gate', 1);});
+document.getElementById('4-').addEventListener("click", function() {mainfunc('big gate', -1);});
+
+document.getElementById('5+').addEventListener("click", function() {mainfunc('15ft gate', 1);});
+document.getElementById('5-').addEventListener("click", function() {mainfunc('15ft gate', -1);});
+
+
+let touchStartX = 0;
+    let touchEndX = 0;
+    window.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+    });
+    window.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].clientX;
+      let swipeDistance = touchEndX - touchStartX;
+      if (swipeDistance > 100) {
+        console.log('Swipe Right');
+        //document.body.style.backgroundColor = "red";
+        window.location.href = "curve.html";
+      } else if (swipeDistance < -100) {
+        console.log('Swipe Left');
+        //document.body.style.backgroundColor = "blue";
+        window.location.href = "counter.html";
+      }
+    });
+  
+  
+</script>
+
+</body>
+
+</html>
