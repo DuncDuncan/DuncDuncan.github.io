@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>curve calc</title>
+  <link href="style.css" rel="stylesheet" type="text/css" />
+</head>
+
+<style>
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 1%;
+  width: 98%;
+  background-color: rgb(50,50,50);
+}
+
+* {
+  font-family: roboto;
+  color: white;
+  font-size: 30px;
+}
+
+.container {
+  width: 100%;
+  //margin-left: 5%;
+  max-width: 500px;
+  background-color: red;
+}
+
+.item {
+  //height: 50px;
+  width: 40%;
+  //background-color: blue;
+  float: left;
+  display: block;
+  margin: 0;
+  text-align: left;
+  border-bottom: 1px solid;
+}
+
+.title {
+  width: 100%;
+  float: left;
+  display: block;
+  margin: 0;
+  text-align: left;
+  font-size: 15px;
+}
+
+.result {
+  height: 50px;
+  width: 100%;
+  //background-color: yellow;
+  float: left;
+  display: block;
+  margin: 0;
+  text-align: right;
+  //border-bottom: 1px solid;
+}
+
+.button {
+  //height: 50px;
+  width: 10%;
+  //background-color: green;
+  float: left;
+  display: block;
+  margin: 0;
+  text-align: center;
+  cursor: grab;
+  user-select: none;
+  border-bottom: 1px solid;
+}
+
+.quantity {
+  //height: 50px;
+  width: 40%;
+  //background-color: purple;
+  float: left;
+  display: block;
+  margin: 0 0 10px 0;
+  text-align: right;
+  border-bottom: 1px solid;
+}
+</style>
+  
+<body>
+
+  <div class="container">
+    <div>
+      <p class="title" style="text-align: right">Set post back by</p>
+      <p class="result" id='result'></p>
+    </div>
+    <div>
+      <p class="title" style="text-align: right">Length of curve is</p>
+      <p class="result" id='result1'></p>
+    </div>
+    <div>
+      <p class="title" style="text-align: right">Distance from corner to middle of curve is</p>
+      <p class="result" id='result2'></p>
+    </div>
+    <div>
+      <p class="title" style="text-align: right">Radius is</p>
+      <p class="result" id='result3'></p>
+    </div>
+    <div>
+      <p class="title">Angle (θ) between straight lines</p>
+      <p class="quantity" id="angleq"></p>
+      <p class="item">°</p>
+      <p class="button" id="0-">-</p>
+      <p class="button" id="0+">+</p>
+    </div>
+    <div>
+      <p class="title">Distance (d) from corner to start of curve</p>
+      <p class="quantity" id="distanceq"></p>
+      <p class="item">m</p>
+      <p class="button" id="1-">-</p>
+      <p class="button" id="1+">+</p>
+    </div>
+    <div>
+      <p class="title">Gap (g) between posts</p>
+      <p class="quantity" id="gapq">1000</p>
+      <p class="item">mm</p>
+      <p class="button" id="2-">-</p>
+      <p class="button" id="2+">+</p>
+    </div>
+  </div>
+
+  <img src='protractor.png' style='width:100%; max-width: 600px; filter:invert(); filter: brightness(10000%)'>
+  <p class="title">x = sin(180-2arccos(g/2dtan(θ/2)))</p>
+<script>
+
+
+data = {
+  'angle': {'value': 150.0, 'increment': 1},
+  'distance': {'value': 10.0, 'increment': 0.1},
+  'gap': {'value': 1000, 'increment': 10},
+  'result': 0,
+  'result1': 0,
+  'result2': 0,
+  'result3': 0
+}
+
+function mainfunc(item, operation) {
+  console.log(item)
+    data[item]['value'] = data[item]['value'] + (data[item]['increment']*operation)
+    data[item]['value'] = Math.round(data[item]['value'] * 10) / 10
+    console.log(data[item]['value'], data[item]['increment'])
+    //console.log(data[item]['value'] += data[item]['increment'])
+    
+    data['result'] = formula(data['angle']['value'], data['distance']['value'], data['gap']['value'])
+    console.log(data)
+  
+    data['result1'] = formula4(data['angle']['value'], data['distance']['value'], data['gap']['value'])
+    console.log(data)
+  
+  data['result2'] = formula2(data['angle']['value'], data['distance']['value'], data['gap']['value'])
+    console.log(data)
+
+  data['result3'] = formula3(data['angle']['value'], data['distance']['value'])
+  console.log(data)
+
+    document.getElementById(item+'q').innerText = data[item]['value'].toFixed(1)
+    document.getElementById('result').innerText = Math.round(data['result'])+'mm'
+    document.getElementById('result1').innerText = Math.round(data['result1']*100)/100+'m'
+  document.getElementById('result2').innerText = Math.round(data['result2']*100)/100+'m'
+  document.getElementById('result3').innerText = Math.round(data['result3']*100)/100+'m'
+
+}
+
+function formula(a,d,g) {
+  a = degrees_to_radians(a)
+  g = g*0.001
+  var x = 1000*Math.sin(Math.PI-(2*Math.acos(g/(2*d*Math.tan(0.5*a)))))
+  console.log(a,d,x)
+  return x
+}
+
+function formula1(a,d,g) { //angle
+  a = degrees_to_radians(a)
+  g = g*0.001
+  var x = 2*Math.acos(g/(2*d*Math.tan(0.5*a)))
+  console.log(a,d,x)
+  x = rad_to_degrees(x)
+  return x
+}
+
+function formula2(a,d,g) { //distance corner to middle of curve
+  a = degrees_to_radians(a)
+  g = g*0.001
+  var x = ((d*Math.tan(0.5*a))/Math.sin(0.5*a)) - (d*Math.tan(0.5*a))
+  console.log(a,d,x)
+  return x
+}
+
+function formula3(a,d) { //radius
+  a = degrees_to_radians(a)
+  var x = d*Math.tan(0.5*a)
+  console.log(a,d,x)
+  return x
+}
+
+function formula4(a,d) { //length of arc
+  a2 = 360 - a - 180
+  a = degrees_to_radians(a)
+  r = d*Math.tan(0.5*a)
+  c = 2 * Math.PI * r
+  x = (a2/360) * c
+  console.log('arc',x)
+  return x
+}
+
+console.log(formula(150,10),'meow')
+
+function degrees_to_radians(degrees)
+{
+  var pi = Math.PI;
+  return degrees * (pi/180);
+}
+
+function rad_to_degrees(radians)
+{
+  var pi = Math.PI;
+  return radians * (180/pi);
+}
+
+document.getElementById('0+').addEventListener("click", function() {mainfunc('angle', 1);});
+document.getElementById('0-').addEventListener("click", function() {mainfunc('angle', -1);});
+document.getElementById('1+').addEventListener("click", function() {mainfunc('distance', 1);});
+document.getElementById('1-').addEventListener("click", function() {mainfunc('distance', -1);});
+document.getElementById('2+').addEventListener("click", function() {mainfunc('gap', 1);});
+document.getElementById('2-').addEventListener("click", function() {mainfunc('gap', -1);});
+
+document.getElementById('0+').addEventListener("dblclick", function() {mainfunc('angle', 8);});
+document.getElementById('0-').addEventListener("dblclick", function() {mainfunc('angle', -8);});
+document.getElementById('1+').addEventListener("dblclick", function() {mainfunc('distance', 8);});
+document.getElementById('1-').addEventListener("dblclick", function() {mainfunc('distance', -8);});
+document.getElementById('2+').addEventListener("dblclick", function() {mainfunc('gap', 8);});
+document.getElementById('2-').addEventListener("dblclick", function() {mainfunc('gap', -8);});
+
+mainfunc('angle', 1)
+mainfunc('distance', 1)
+mainfunc('gap', 1)
+mainfunc('angle', -1)
+mainfunc('distance', -1)
+mainfunc('gap', -1)
+  
+
+let touchStartX = 0;
+    let touchEndX = 0;
+    window.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+    });
+    window.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].clientX;
+      let swipeDistance = touchEndX - touchStartX;
+      if (swipeDistance > 100) {
+        console.log('Swipe Right');
+        //document.body.style.backgroundColor = "red";
+        window.location.href = "gap.html";
+      } else if (swipeDistance < -100) {
+        console.log('Swipe Left');
+        //document.body.style.backgroundColor = "blue";
+        window.location.href = "counter.html";
+      }
+    });
+</script>
+
+</body>
+
+</html>
