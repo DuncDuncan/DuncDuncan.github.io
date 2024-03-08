@@ -84,10 +84,54 @@ html, body {
   text-align: right;
   border-bottom: 1px solid;
 }
+
+.guard {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(50,50,50,0.9);
+  z-index: 5;
+}
+
+.numpad {
+  width: 150px;
+  height: 150px;
+  margin-left: calc(50vw - 75px);
+  margin-top: calc(50vh - 75px);
+}
+
+.num {
+  text-align: center;
+  width: 40px;
+  height: 40px;
+  display: block;
+  float: left;
+  cursor: pointer;
+  padding-top: 4px;
+  margin: 5px;
+  background-color: rgb(50,50,50);
+  user-select: none;
+}
 </style>
   
 <body>
 
+  <div class = "guard" id="guard">
+    <div class="numpad">
+      <div class="num" id="1">1</div>
+      <div class="num" id="2">2</div>
+      <div class="num" id="3">3</div>
+      <div class="num" id="4">4</div>
+      <div class="num" id="5">5</div>
+      <div class="num" id="6">6</div>
+      <div class="num" id="7">7</div>
+      <div class="num" id="8">8</div>
+      <div class="num" id="9">9</div>
+    </div>
+  </div>
+  
   <div class="container">
     <div>
       <p class="title" style="text-align: right">Set post back by</p>
@@ -246,8 +290,28 @@ mainfunc('gap', 1)
 mainfunc('angle', -1)
 mainfunc('distance', -1)
 mainfunc('gap', -1)
-  
 
+//password
+
+password = "8888"
+attempts = ""
+var guard = document.getElementById("guard")
+
+function enterNum(num) {
+  console.log(num)
+  attempts += num
+  if (attempts.includes(password)) {
+    guard.style.visibility = "hidden";
+  }
+}
+
+for (let i = 1; i < 9; i++) {
+  i = i.toString()
+  console.log(i)
+  document.getElementById(i).addEventListener("click", function() {enterNum(i);});
+}
+
+//SWIPE
 let touchStartX = 0;
     let touchEndX = 0;
     window.addEventListener('touchstart', (e) => {
