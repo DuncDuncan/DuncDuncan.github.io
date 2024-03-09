@@ -130,6 +130,9 @@ html, body {
       <div class="num" id="7">7</div>
       <div class="num" id="8">8</div>
       <div class="num" id="9">9</div>
+      <div class="num" id="x">x</div>
+      <div class="num" id="0">0</div>
+      <div class="num" id="y">y</div>
     </div>
   </div>
   
@@ -292,25 +295,27 @@ mainfunc('angle', -1)
 mainfunc('distance', -1)
 mainfunc('gap', -1)
 
-//password
+//security
 
-password = "8888"
+key = "1066xy"
 attempts = ""
 var guard = document.getElementById("guard")
 
-function enterNum(num) {
-  console.log(num)
-  attempts += num
-  if (attempts.includes(password)) {
+function enterChar(char) {
+  console.log(char)
+  attempts += char
+  if (attempts.includes(key)) {
     guard.style.visibility = "hidden";
   }
 }
 
-for (let i = 1; i < 9; i++) {
+for (let i = 0; i < 9; i++) {
   i = i.toString()
   console.log(i)
-  document.getElementById(i).addEventListener("click", function() {enterNum(i);});
+  document.getElementById(i).addEventListener("click", function() {enterChar(i);});
 }
+document.getElementById("x").addEventListener("click", function() {enterChar("x");});
+document.getElementById("y").addEventListener("click", function() {enterChar("y");});
 
 //SWIPE
 let touchStartX = 0;
