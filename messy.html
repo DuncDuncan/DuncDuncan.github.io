@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>messy</title>
+  <style>
+    html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: black;
+  overflow: hidden
+}
+  </style>
+</head>
+
+<body>
+
+
+
+<canvas id="myCanvas" width=w height=w>
+Your browser does not support the HTML canvas tag.</canvas>
+
+<script>
+var c = document.getElementById("myCanvas");
+var ctx = c.getContext("2d");
+
+var w = window.innerWidth
+var h = window.innerHeight
+
+var t = 0
+var x = w*0.5
+var y = h*0.5
+var d = [-1,1,-1,1]
+
+c.width=w
+c.height=h
+ctx.lineWidth = 5
+
+ctx.bgColor = "black"
+
+function move() {
+	ctx.beginPath()
+  ctx.moveTo(x,y)
+	t += 1
+  x = (Math.sin(t)*t*0.5)+(w*0.5)
+  y = (Math.cos(x)*t*0.5)+(h*0.5)
+  ctx.lineTo(x,y);
+	ctx.stroke();
+  ctx.strokeStyle = "rgb("+x%255+","+t%255+","+y%255+")"
+}
+
+
+function getRndInteger(min, max) {
+  return Math.floor(Math.random() * (max - min + 1) ) + min;
+}
+  
+function move2() {
+  //console.log(x,y)
+  //ctx.lineWidth = t*0.1
+	ctx.beginPath()
+  ctx.moveTo(x,y)
+	t += 1
+  //d += t*0.0000001
+  //d = Math.sin(t)*10
+  //x += getRndInteger(-d,d+2*Math.cos(t*Math.sin(t*0.00001)))
+  //y += getRndInteger(-d,d+2*Math.sin(t*Math.sin(t*0.00001)))
+  x += Math.sin(t*0.01)*20*Math.cos(10*t*Math.sin(t*0.001))
+  y += Math.sin(t*0.01)*20*Math.sin(10*t*Math.sin(t*0.001))
+  //x += Math.cos(t*0.01*Math.sin(t))*Math.sin(t*0.01)*10
+  //y += Math.sin(t*0.01*Math.sin(t))*Math.sin(t*0.01)*10
+  
+  //x += Math.sin(t*0.01)*5*Math.cos(10*t*Math.sin(t*0.001)) good spiral
+  //y += Math.sin(t*0.01)*5*Math.sin(10*t*Math.sin(t*0.001))
+  
+  ctx.lineTo(x,y);
+	ctx.stroke();
+  ctx.strokeStyle = "rgb("+t%255+","+x%255+","+y%255+")"
+  isOffscreen()
+  //console.log(x,y)
+}
+
+function move5() {
+  //console.log(x,y)
+  //ctx.lineWidth = t*0.1
+	ctx.beginPath()
+  ctx.moveTo(x,y)
+	t += 1
+  //d += t*0.0000001
+  //d = Math.sin(t)*10
+  x += getRndInteger(d[0],d[1])
+  y += getRndInteger(d[2],d[3])
+ 
+ 
+  ctx.lineTo(x,y);
+	ctx.stroke();
+  ctx.strokeStyle = "rgb("+t%255+","+x%255+","+y%255+")"
+  isOffscreen()
+  //console.log(x,y)
+}
+
+var i=0
+var j=0
+  
+function move5() {
+  //console.log(x,y)
+  //ctx.lineWidth = t*0.1
+	ctx.beginPath()
+  ctx.moveTo(x,y)
+	t += 1
+  
+  
+  if (i<x) {
+    x += getRndInteger(-10,9) *0.5
+  } else {
+    x += getRndInteger(-9,10) *0.5
+  }
+
+  
+  if (j<y) {
+    y += getRndInteger(-10,9) *0.5
+  } else {
+    y += getRndInteger(-9,10) *0.5
+  }
+ 
+ 
+  ctx.lineTo(x,y);
+	ctx.stroke();
+  ctx.strokeStyle = "rgb("+t%255+","+x%255+","+y%255+")"
+  isOffscreen()
+  //console.log(x,y)
+}
+
+var a=w*0.5
+var b=h*0.5
+  
+function move5() {
+  //console.log(x,y)
+  //ctx.lineWidth = t*0.1
+	ctx.beginPath()
+  ctx.moveTo(x,y)
+	t += 1
+  
+  if (a<x) {
+    x += getRndInteger(-10,9) *0.5
+  } else {
+    x += getRndInteger(-9,10) *0.5
+  }
+
+  if (b<y) {
+    y += getRndInteger(-10,9) *0.5
+  } else {
+    y += getRndInteger(-9,10) *0.5
+  }
+ 
+  ctx.lineTo(x,y);
+	ctx.stroke();
+  ctx.strokeStyle = "rgb("+t%255+","+(t*2)%255+","+(t*3)%255+")"
+
+  ctx.beginPath()
+  ctx.moveTo(a,b)
+
+  if (x>a) {
+    a += getRndInteger(-10,9) *0.5
+  } else {
+    a += getRndInteger(-9,10) *0.5
+  }
+
+  if (y>b) {
+    b += getRndInteger(-10,9) *0.5
+  } else {
+    b += getRndInteger(-9,10) *0.5
+  }
+ 
+  ctx.lineTo(a,b);
+	ctx.stroke();
+  ctx.strokeStyle = "rgb("+t%255+","+x%255+","+y%255+")"
+  isOffscreen()
+  //console.log(x,y)
+}
+
+function move3() {
+  //console.log(x,y)
+  ctx.lineWidth = t*0.01
+	ctx.beginPath()
+  ctx.moveTo(x,y)
+	t += 1
+  x += t*0.1
+  y += t*0.1
+  ctx.lineTo(x,y);
+	ctx.stroke();
+  ctx.strokeStyle = "rgb("+t%255+","+x%255+","+y%255+")"
+  isOffscreen()
+}
+
+var dice =0
+
+function setK() {
+  k = [getRndInteger(1,1000), getRndInteger(1,1000), getRndInteger(1,w*h*0.00001)]
+
+  dice = getRndInteger(0,1)
+  //console.log(dice)
+
+  dicex = getRndInteger(0,5)
+  dicey = getRndInteger(0,5)
+  console.log(dicex,dicey)
+}
+
+function move4() {
+  //console.log(x,y)
+  //ctx.lineWidth = t*0.1
+	ctx.beginPath()
+  ctx.moveTo(x,y)
+	t += 1
+  //d += t*0.0000001
+  //d = Math.sin(t)*10
+  //x += getRndInteger(-d,d+2*Math.cos(t*Math.sin(t*0.00001)))
+  //y += getRndInteger(-d,d+2*Math.sin(t*Math.sin(t*0.00001)))
+  if (dice==0) {
+    x += Math.sin(t*0.0001*k[0])*k[2]
+    y += Math.cos(t*0.0001*k[1])*k[2]
+  } else {
+    x += Math.tan(t*0.0001*k[0])*k[2]
+    y += Math.tan(t*0.0001*k[1])*k[2]
+  }
+  //x += Math.cos(t*0.01*Math.sin(t))*Math.sin(t*0.01)*10
+  //y += Math.sin(t*0.01*Math.sin(t))*Math.sin(t*0.01)*10
+  
+  //x += Math.sin(t*0.01)*5*Math.cos(10*t*Math.sin(t*0.001)) good spiral
+  //y += Math.sin(t*0.01)*5*Math.sin(10*t*Math.sin(t*0.001))
+  
+  ctx.lineTo(x,y);
+	ctx.stroke();
+  ctx.strokeStyle = "rgb("+t%255+","+x%255+","+y%255+")"
+  isOffscreen()
+  //console.log(x,y)
+}
+
+var dicex = 0//[0,0,0,0,0]
+var dicey = 0//[0,0,0,0,0]
+  
+function move1() {
+  //console.log(x,y)
+  //ctx.lineWidth = t*0.1
+	ctx.beginPath()
+  ctx.moveTo(x,y)
+	t += 1
+
+  //dice1 = getRndInteger(0,10)
+
+  //dicex = 2
+  //dicey = 2
+
+  //ctx.lineWidth=20
+  
+  if (dicex==0) {
+    x += Math.sin(t*0.0001*k[0])*k[2]
+  } else if (dicex==1) {
+    x += Math.tan(t*0.0001*k[0])*k[2]
+  } else if (dicex==2) {
+    x +=  y
+  } else if (dicex==3) {
+    x += Math.sin(-t*0.0001*k[0])*k[2] + Math.tan(t*0.0001*k[0])*k[2]
+  } else if (dicex==4) {
+    x += Math.sin(-t*0.0001*k[0])*k[2]
+  } else {
+    x += Math.tan(-t*0.0001*k[0])*k[2]
+  }
+
+  if (dicey==0) {
+    y += Math.sin(t*0.0001*k[0])*k[2]
+  } else if (dicey==1) {
+    y += Math.tan(t*0.0001*k[0])*k[2]
+  } else if (dicey==2) {
+    y +=  x
+  } else if (dicey==3) {
+    y += Math.sin(t*0.0001*k[0])*k[2] + Math.tan(t*0.0001*k[0])*k[2]
+  } else if (dicey==4) {
+    y += Math.sin(-t*0.0001*k[0])*k[2]
+  } else {
+    y += Math.tan(-t*0.0001*k[0])*k[2]
+  }
+  //x += Math.cos(t*0.01*Math.sin(t))*Math.sin(t*0.01)*10
+  //y += Math.sin(t*0.01*Math.sin(t))*Math.sin(t*0.01)*10
+  
+  //x += Math.sin(t*0.01)*5*Math.cos(10*t*Math.sin(t*0.001)) good spiral
+  //y += Math.sin(t*0.01)*5*Math.sin(10*t*Math.sin(t*0.001))
+  
+  ctx.lineTo(x,y);
+	ctx.stroke();
+  ctx.strokeStyle = "rgb("+t%255+","+x%255+","+y%255+")"
+  isOffscreen()
+  console.log(x,y)
+}
+
+function spiral() {
+  ctx.beginPath()
+  ctx.moveTo(x,y)
+	x += 1
+  t= 49
+  //x = Math.sqrt((t*t)-Math.pow(y-(h*0.5),2))+(w*0.5)
+  //y = Math.sqrt((t*t)-Math.pow(x-(w*0,5),2))+(h*0.5)
+  x = Math.sqrt((t)-(y*y))
+  y = Math.sqrt((t)-(x*x))
+  console.log(t,x,y)
+  ctx.lineTo(x,y);
+	ctx.stroke();
+  ctx.strokeStyle = "rgb("+t%255+","+x%255+","+y%255+")"
+}
+
+function isOffscreen() {
+  if (x>w || x<0 || y>h || y<0) {
+    x = w*0.5
+    y = h*0.5
+  }
+}
+
+function isOffscreen() {
+  while (x<0) {x=x+w}
+  while (y<0) {y=y+h}
+  if (x>w) {x=x%w}
+  if (y>h) {y=y%h}
+
+  while (a<0) {a=a+w}
+  while (b<0) {b=b+h}
+  if (a>w) {a=a%w}
+  if (b>h) {b=b%h}
+}
+
+var mode = 1
+
+function restart() {
+  ctx.clearRect(0, 0, w, h)
+  x = w*0.5
+  y = h*0.5
+  t = 0
+  setK()
+  d = [getRndInteger(-5,0),getRndInteger(0,5),getRndInteger(-5,0),getRndInteger(0,5)]
+
+  ctx.lineWidth = [getRndInteger(0,10), getRndInteger(0,1000)][getRndInteger(0,1)]
+
+  clearInterval(main)
+  mode = getRndInteger(0,5)
+
+  if (mode==0) {
+    main = setInterval(move4, 0)
+  } else if (mode==1) {
+    main = setInterval(move3, 0)
+  } else if (mode==2) {
+    main = setInterval(move2, 0)
+  } else if (mode==3) {
+    main = setInterval(move5, 0)
+  } else if (mode==4) {
+    main = setInterval(move, 0)
+  } else {
+    main = setInterval(move1, 0)
+  }
+  
+}
+
+function select() {
+  x = event.clientX
+  y = event.clientY
+  setK()
+  d =[getRndInteger(-5,0), getRndInteger(0,5), getRndInteger(-5,0), getRndInteger(0,5)]
+  if (mode!=3) {ctx.lineWidth = [getRndInteger(0,10), getRndInteger(0,10000)][getRndInteger(0,1)]}
+}
+
+function select1() {
+  setK()
+  d =[getRndInteger(-5,0), getRndInteger(0,5), getRndInteger(-5,0), getRndInteger(0,5)]
+  if (mode!=3) {ctx.lineWidth = [getRndInteger(0,10), getRndInteger(0,1000)][getRndInteger(0,1)]}
+}
+
+function mousePos() {
+  i = event.clientX
+  j = event.clientY
+}
+
+window.addEventListener("click", select);
+window.addEventListener("mousemove", mousePos);
+window.addEventListener("dblclick", restart);
+
+setK()
+var main = setInterval(move4, 0)
+//setInterval(restart, 10000)
+setInterval(select1, 3000)
+  
+</script>
+
+</body>
+</html>
+
+
+</body>
+
+</html>
