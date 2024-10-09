@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>EcoSim</title>
+    
+    <style>
+      body {
+  border: 0px;
+  padding: 0px;
+  //overflow: hidden;
+  margin: 0px;
+  background: black;
+  //margin-right: 100px;
+}
+
+canvas {
+  float: left;
+}
+
+.button {
+  position: relative;
+  display: flex;
+  float: right;
+  justify-content: center;
+  align-items: center;
+  width: 80px;
+  height: 25px;
+  text-align: center;
+  font-size: 100%;
+  color: white;
+  font-family: roboto, arial;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  overflow:hidden;
+  z-index: 4;
+  font-size: 10px;
+  user-select: none;
+}
+
+.button:hover {
+  font-weight: 900;
+}
+
+.screen {
+  opacity: 1;
+  position: fixed;
+  width: 80px;
+  //height: 100%;
+  background: rgba(200,0,0,0);
+  z-index: 4;
+  font-size: 8vw;
+  user-select: none;
+  text-align: center;
+  font-family: roboto, arial;
+  color: white;
+  right: 0px;
+}
+
+
+.graph {
+  position: relative;
+  z-index: 3;
+  float: left;
+  width: 100%;
+}
+    </style>
+
+    <body onload="startGame()">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  </head>
+  <body>
+    <div id="screen" class="screen">
+      <div id="hide" class="button">></div>
+      <div id="time" class="button">TIME 0</div>
+      <div id="score" class="button">SCORE 0</div>
+      <div id="PopA" class="button"></div>
+      <div id="PopB" class="button"></div>
+      <div id="PopC" class="button"></div>
+      <div id="faster" class="button">FASTER</div>
+      <div id="slower" class="button">SLOWER</div>
+      <div id="graph" class="button">GRAPHS</div>
+      <div id="flash" class="button">FLASH</div>
+      <div id="more" class="button">MORE</div>
+      <div id="game" class="button">GAME</div>
+    </div>
+    <div id='pop' class="graph"><!-- Plotly chart will be drawn inside this DIV --></div>
+    <div id='biomass' class="graph"><!-- Plotly chart will be drawn inside this DIV --></div>
+    <div id='alleleA' class="graph"><!-- Plotly chart will be drawn inside this DIV --></div>
+    <div id='alleleB' class="graph"><!-- Plotly chart will be drawn inside this DIV --></div>
+    <div id='alleleC' class="graph"><!-- Plotly chart will be drawn inside this DIV --></div>
+    
+    <script>
+var myGamePiece, 
+w = window.innerWidth,
+h = window.innerHeight,
+time = 0,
+popStartA = 100,
+popStartB = 100,
+popStartC = 100,
+period = 50,
+topSpeed = 15,
+score = 0;
+species = ['speciesA', 'speciesB', 'speciesC']
+organisms = {'speciesA': [], 'speciesB': [], 'speciesC': []}
+strobe = false
+game = false
+
+t=[]
+popA=[]
+popB=[]
+popC=[]
+
+biomass = {'speciesA': [], 'speciesB': [], 'speciesC': []}
+
+genes = ['C','S','R','L','B','D','E','G','F']
+phenotypes = {'R': 'Right Turn', 'L': 'Left Turn', 'B': 'Acceleration', 'C': 'Control', 'S': 'Speed', 'G': 'Gestation', 'F': 'Fecundity', 'D': 'Baby Size', 'E': 'Escape'}
+
+//w *= 0.8
+//h *= 0.8
+
+
+function startGame() {
+    genesis(popStartA, 'speciesA');
+    genesis(popStartB, 'speciesB');
+    genesis(popStartC, 'speciesC');
+    myGameArea.start();
+}
+
+
+function genesis(n, species) {
+  for (i = 0; i < n; i++) {
+    let x = getRndInteger(0,w);
+    let y = getRndInteger(0,h);
+    birth(x,y,species,getRndInteger(10,500),makeGenome(),makeGenome())
+  }
+}
+
+function birth(x,y,species,babySize, genomeMum, genomeDad) {
+  //console.log('species',species)
+  let colour='white';
+  //if (species=='speciesA') {colour = randomColour(0,0,128,256,0,128)};
+  //if (species=='speciesB') {colour = randomColour(200,256,0,128,0,50)};
+  if (species=='speciesA') {colour = randomColour(128,256,0,128,0,128)};
+  if (species=='speciesB') {colour = randomColour(0,128,128,256,0,128)};
+  if (species=='speciesC') {colour = randomColour(0,128,0,128,128,256)};
+  let organism = new component(babySize, colour, x, y, genomeMum, genomeDad);
+  organisms[species].push(organism);
+}
+
+
+var myGameArea = {
+    canvas : document.createElement("canvas"),
+    start : function() {
+        this.canvas.width = w;
+        this.canvas.height = h;
+        this.context = this.canvas.getContext("2d");
+        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+        this.frameNo = 0;
+        this.interval = setInterval(updateGameArea, period);
+        window.addEventListener('keydown', function (e) {
+            e.preventDefault();
+            myGameArea.keys = (myGameArea.keys || []);
+            myGameArea.keys[e.keyCode] = (e.type == "keydown");
+        })
+        window.addEventListener('keyup', function (e) {
+            myGameArea.keys[e.keyCode] = (e.type == "keydown");
+        })
+    },
+    stop : function() {
+        clearInterval(this.interval);
+    },    
+    clear : function() {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+}
+
+function calcWidth(area, aspectRatio) {
+  return Math.sqrt(area/aspectRatio)
+}
+
+function calcHeight(area, aspectRatio) {
+  return aspectRatio*Math.sqrt(area/aspectRatio)
+}
+
+function component(area, colour, x, y, genomeMum, genomeDad) {
+
+    //this.type = type;
+    this.genome = recombination(genomeMum,genomeDad);
+    this.genome2 = '';
+    this.aspectRatio = getRndInteger(15,30)/10;
+    this.area = area;
+    this.firstColour = colour;
+    this.colour = colour;
+    this.pregnant = false;
+    this.pregnancy = 0;
+    this.age = 0;
+    this.width = calcWidth(area, this.aspectRatio);
+    this.height = calcHeight(area, this.aspectRatio);
+    this.speed = 0;
+    this.maxSpeed = 2+(5*char_count(this.genome,'S'));
+    this.firstMaxSpeed = this.maxSpeed;
+    this.angleFactorRight = char_count(this.genome,'R')
+    this.angleFactorLeft = char_count(this.genome,'L')
+    this.maxAccel = 1 + char_count(this.genome,'B')
+    this.gestation = 100*(1+char_count(this.genome,'G'))
+    this.litterSize = 0;
+    this.maxBabySize = 50 * (1+char_count(this.genome,'D'))
+    this.mileage = 0;
+    this.dying = false;
+    this.escapeFactor = char_count(this.genome,'E')
+    this.angle = getRndInteger(0,2*Math.PI);
+    this.moveAngle = 0;
+    this.x = x;
+    this.y = y;    
+    this.update = function() {
+        ctx = myGameArea.context;
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+        ctx.fillStyle = this.colour;
+        this.maxSpeed = 1+(this.firstMaxSpeed * (1-(this.pregnancy/this.gestation)))
+        if (this.pregnant) {
+          this.width = calcWidth(this.area, 1);
+          this.height = calcHeight(this.area, 1);
+        } else {
+          this.width = calcWidth(this.area, this.aspectRatio);
+          this.height = calcHeight(this.area, this.aspectRatio);
+        }
+        ctx.fillRect(this.width / -2, this.height / -2, this.width, this.height);
+        ctx.restore();    
+    }
+    this.newPos = function() {
+        this.angle += this.moveAngle * Math.PI / 180;
+        if (this.angle<0) {this.angle += 2*Math.PI}
+        if (this.angle>2*Math.PI) {this.angle -= 2*Math.PI}
+        this.x += this.speed * Math.sin(this.angle);
+        this.y -= this.speed * Math.cos(this.angle);
+        if (this.x > w) {this.x -= w};
+        if (this.x < 0) {this.x += w};
+        if (this.y > h) {this.y -= h};
+        if (this.y < 0) {this.y += h};
+    }
+    this.calcLitterSize = function() {
+      this.litterSize = (this.area/this.maxBabySize)*(1+char_count(this.genome,'F'))
+    }
+}
+
+var velocity = 0.2;
+var accel;
+var deccel;
+
+
+function updateGameArea() {
+    time += 1;
+
+
+    w = window.innerWidth;
+    h = window.innerHeight;
+    myGameArea.clear();
+
+    //escape('speciesC')
+    //escape('speciesB')
+    //escape('speciesA')
+    predate('speciesC')
+    predate('speciesB')
+    predate('speciesA')
+    behaviour('speciesC')
+    behaviour('speciesB')
+    behaviour('speciesA')
+    //gamePieceStuff()
+
+    showData()
+    recordData()
+    //if (time%500==0) {plotGraph()}
+}
+
+
+function predateOld() {
+  for (var i = 0; i < organisms['speciesB'].length; i++) {
+    for (var j = 0; j < organisms['speciesA'].length; j++) {
+      let pred = organisms['speciesB'][i]
+      let prey = organisms['speciesA'][j]
+      if (isCollision(pred.x, pred.y, prey.x, prey.y, 5)) {
+        if (pred.area>prey.area) {
+          pred.area += prey.area
+          organisms['speciesA'].splice(j,1)
+        } else if (pred.area<prey.area) {
+          prey.area += pred.area
+          organisms['speciesB'].splice(i,1)
+          break
+        }
+      }
+    }
+  }
+}
+
+
+function predateold2(species) {
+  for (var i = 0; i < organisms[species].length; i++) {
+    for (var otherSpecies in organisms) {
+      //console.log(otherSpecies)
+      if (otherSpecies!=species) {
+        for (var j = 0; j < organisms[otherSpecies].length; j++) {
+          let pred = organisms[species][i]
+          let prey = organisms[otherSpecies][j]
+          //console.log(pred,prey)
+          if (isCollision(pred.x, pred.y, prey.x, prey.y, 5) && pred.area>prey.area) {
+            pred.area += prey.area
+            organisms[otherSpecies].splice(j,1)
+            if (species=='speciesA' && i==0) {score+=prey.area}
+            //console.log(species,' ate ',otherSpecies)
+          }
+        }
+      }
+    }
+  }
+}
+
+function predate(species) {
+  for (var i = 0; i < organisms[species].length; i++) {
+    for (var otherSpecies in organisms) {
+      //console.log(otherSpecies)
+      if (otherSpecies!=species) {
+        for (var j = 0; j < organisms[otherSpecies].length; j++) {
+          let pred = organisms[species][i]
+          let prey = organisms[otherSpecies][j]
+          //console.log(pred,prey)
+          if (!pred.dying && isCollision(pred.x, pred.y, prey.x, prey.y, 5)) {
+            if (pred.area>prey.area) {
+              pred.area += prey.area
+              organisms[otherSpecies].splice(j,1)
+              if (species=='speciesA' && i==0) {score+=prey.area}
+              //console.log(species,' ate ',otherSpecies)
+            } else if (prey.dying && pred.area<prey.area) {
+              prey.area -= Math.round(pred.area/5);
+              pred.area += Math.round(pred.area/5);
+              if (prey.area<0) {console.log(prey.area)};
+              //if (prey.area<1) {organisms[otherSpecies].splice(j,1)}
+            } 
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+function behaviour1(species) {
+
+    for (var i = 0; i < organisms[species].length; i++) {
+
+      let org = organisms[species][i]
+      
+      if (strobe) {
+        if (species=='speciesA') {org.colour = randomColour(128,256,0,128,0,128)};
+        if (species=='speciesB') {org.colour = randomColour(0,128,128,256,0,128)};
+        if (species=='speciesC') {org.colour = randomColour(0,128,0,128,128,256)};
+      }
+
+      org.age += 1;
+      //if (org.area>50) {org.area -= 0.0000001}
+      //if (species=='speciesB') {org.energy -=1}
+      if (org.pregnant) {org.pregnancy+=1}
+      if (org.area<org.maxBabySize) {org.pregnant=false; org.pregnancy=0}
+
+      //if (org.pregnant) {org.width+=0.1}
+      //org.width += 0.01 + (org.pregnancy*0.001);
+      //org.height += 0.02;
+      //if (org.width>org.height) {org.width=org.height}
+      
+      org.speed += getRndInteger(-org.maxAccel,org.maxAccel); //PUT THIS BACK
+      //org.mileage += Math.sqrt(org.speed*org.speed)
+      //console.log(org.mileage)
+      //org.mileage += 1
+      if (org.speed<0) {org.mileage-=org.speed} else {org.mileage+=org.speed}
+
+      if (org.mileage>100000) {
+        org.dying=true;
+        if (species=='speciesA') {org.colour='rgb(200,180,180'}
+        if (species=='speciesB') {org.colour='rgb(180,200,180'}
+        if (species=='speciesC') {org.colour='rgb(180,180,200'}
+      }
+      //org.speed += getRndInteger(-1,1);
+      if (org.speed > org.maxSpeed) {org.speed = org.maxSpeed};
+      if (org.speed < 0) {org.speed = 0};
+
+      if (game && species=='speciesA' && i==0) {
+        playerMoves(org);
+        org.colour = randomColour(128,256,0,128,0,128);
+        //org.colour = 'yellow';
+      } else {
+        let maxAngleRight = org.angleFactorRight*org.speed;
+        let maxAngleLeft = org.angleFactorLeft*org.speed;
+        org.moveAngle += getRndInteger(-1,1);
+        if (org.moveAngle>maxAngleRight) {org.moveAngle=maxAngleRight};
+        if (org.moveAngle<-maxAngleLeft) {org.moveAngle=-maxAngleLeft};
+      }
+
+
+      for (var j = 0; j < organisms[species].length; j++) { //MATING
+        if (i!=j && !org.pregnant && !organisms[species][j].pregnant && org.area>org.maxBabySize && organisms[species][j].area>organisms[species][j].maxBabySize && isCollision(org.x, org.y, organisms[species][j].x, organisms[species][j].y, 10)) {
+          //org.colour='pink';
+          org.pregnant=true;
+          org.genome2 = organisms[species][j].genome;
+          org.calcLitterSize();
+          if (species=='speciesA' && i==0) {score+=1} else if (species=='speciesA' && j==0) {score+=1}
+        }
+      }
+      
+
+      //if (time%100==0) {console.log(org.pregnancy), t}
+      if (org.pregnancy>org.gestation) {//BIRTH
+        let babySize = getRndInteger(10,org.maxBabySize)
+        org.area -= babySize;
+        if (org.area<0) {console.log('atBirth',org.area,babySize)}
+        birth(org.x,org.y,species,babySize,org.genome,org.genome2);
+        org.litterSize -= 1
+        org.pregnancy = org.gestation-5
+        if (org.litterSize<0 || org.area<org.maxBabySize) {
+          org.pregnant = false;
+          org.moveAngle = 0;
+          org.speed = 0;
+          //org.width -= 30;
+          org.pregnancy = 0;
+          org.colour = org.firstColour;
+        }
+      }
+
+      //if (org.age>5000 && org.area<101) {
+        //organisms[species].splice(i,1)
+        //console.log('oldagedeath')
+      //}
+
+      org.newPos();
+      org.update();
+
+    }
+}
+
+function behaviour(species) {
+
+    for (var i = 0; i < organisms[species].length; i++) {
+
+      let org = organisms[species][i]
+      
+      if (strobe) {
+        if (species=='speciesA') {org.colour = randomColour(128,256,0,128,0,128)};
+        if (species=='speciesB') {org.colour = randomColour(0,128,128,256,0,128)};
+        if (species=='speciesC') {org.colour = randomColour(0,128,0,128,128,256)};
+      }
+
+      org.age += 1;
+      //if (org.area>50) {org.area -= 0.0000001}
+      //if (species=='speciesB') {org.energy -=1}
+      if (org.pregnant) {org.pregnancy+=1}
+      if (org.area<org.maxBabySize) {org.pregnant=false; org.pregnancy=0}
+
+      //if (org.pregnant) {org.width+=0.1}
+      //org.width += 0.01 + (org.pregnancy*0.001);
+      //org.height += 0.02;
+      //if (org.width>org.height) {org.width=org.height}
+      
+      org.speed += getRndInteger(-org.maxAccel,org.maxAccel); //PUT THIS BACK
+      //org.mileage += Math.sqrt(org.speed*org.speed)
+      //console.log(org.mileage)
+      //org.mileage += 1
+      if (org.speed<0) {org.mileage-=org.speed} else {org.mileage+=org.speed}
+
+      if (org.mileage>100000) {
+        org.dying=true;
+        if (species=='speciesA') {org.colour='rgb(200,180,180'}
+        if (species=='speciesB') {org.colour='rgb(180,200,180'}
+        if (species=='speciesC') {org.colour='rgb(180,180,200'}
+      }
+      //org.speed += getRndInteger(-1,1);
+      if (org.speed > org.maxSpeed) {org.speed = org.maxSpeed};
+      if (org.speed < 0) {org.speed = 0};
+
+      if (game && species=='speciesA' && i==0) {
+        playerMoves(org);
+        org.colour = randomColour(128,256,0,128,0,128);
+        //org.colour = 'yellow';
+
+      } else if (org.escapeFactor>1) {
+        escapeNew(org)
+      } else {
+        //org.moveAngle += getRndInteger(-1,1);
+      }
+      let maxAngleRight = org.angleFactorRight*org.speed;
+      let maxAngleLeft = org.angleFactorLeft*org.speed;
+      //console.log('maxAngles',maxAngleLeft,maxAngleRight)
+      if (org.moveAngle>maxAngleRight) {org.moveAngle=maxAngleRight};
+      if (org.moveAngle<-maxAngleLeft) {org.moveAngle=-maxAngleLeft};
+
+
+      for (var j = 0; j < organisms[species].length; j++) { //MATING
+        if (i!=j && !org.pregnant && !organisms[species][j].pregnant && org.area>org.maxBabySize && organisms[species][j].area>organisms[species][j].maxBabySize && isCollision(org.x, org.y, organisms[species][j].x, organisms[species][j].y, 10)) {
+          //org.colour='pink';
+          org.pregnant=true;
+          org.genome2 = organisms[species][j].genome;
+          org.calcLitterSize();
+          if (species=='speciesA' && i==0) {score+=1} else if (species=='speciesA' && j==0) {score+=1}
+        }
+      }
+      
+
+      //if (time%100==0) {console.log(org.pregnancy), t}
+      if (org.pregnancy>org.gestation) {//BIRTH
+        let babySize = getRndInteger(10,org.maxBabySize)
+        org.area -= babySize;
+        if (org.area<0) {console.log('atBirth',org.area,babySize)}
+        birth(org.x,org.y,species,babySize,org.genome,org.genome2);
+        org.litterSize -= 1
+        org.pregnancy = org.gestation-5
+        if (org.litterSize<0 || org.area<org.maxBabySize) {
+          org.pregnant = false;
+          org.moveAngle = 0;
+          org.speed = 0;
+          //org.width -= 30;
+          org.pregnancy = 0;
+          org.colour = org.firstColour;
+        }
+      }
+
+      //if (org.age>5000 && org.area<101) {
+        //organisms[species].splice(i,1)
+        //console.log('oldagedeath')
+      //}
+
+      org.newPos();
+      org.update();
+
+    }
+}
+
+
+
+
+
+function makeGenome() {
+  let genome = '';
+  for (var i = 0; i < genes.length; i++) {
+    if (Math.random()>0.5) {genome += genes[i]} else {genome += genes[i].toLowerCase()}
+    if (Math.random()>0.5) {genome += genes[i]} else {genome += genes[i].toLowerCase()}
+  }
+  //console.log(genome)
+  return genome
+}
+
+
+
+function recombination(genome1,genome2) {
+
+  let newGenome = '';
+
+  for (var i = 0; i < genes.length*2; i+=2) {
+    //console.log(i);
+    if (Math.random()>0.5) {newGenome += genome1[i]} else {newGenome += genome1[i+1]};
+    if (Math.random()>0.5) {newGenome += genome2[i]} else {newGenome += genome2[i+1]}
+  }
+  //console.log(newGenome)
+  return newGenome
+}
+
+//recombination(makeGenome(),makeGenome())
+
+
+
+
+function playerMoves(object) {
+  object.moveAngle = 0;
+  object.speed = velocity;
+  accel = 1.25**-(velocity+7) + 1;
+  deccel = 1.005;
+  deccel = (2/(1+2.718**(-velocity/500)));
+  if (myGameArea.keys && myGameArea.keys[37]) {object.moveAngle = -10}; 
+  if (myGameArea.keys && myGameArea.keys[39]) {object.moveAngle = 10};
+  if (myGameArea.keys && myGameArea.keys[38]) {
+    velocity=velocity*accel;
+  } else {
+    velocity=velocity/(deccel);
+  }
+  if (myGameArea.keys && myGameArea.keys[40]) {velocity=velocity/1.02};
+}
+
+
+
+function showData() {
+  document.getElementById('PopA').innerHTML = 'RED '+organisms['speciesA'].length;
+  document.getElementById('PopB').innerHTML = 'GREEN '+organisms['speciesB'].length;
+  document.getElementById('PopC').innerHTML = 'BLUE '+organisms['speciesC'].length;
+  document.getElementById('score').innerHTML = 'SCORE '+score;
+  document.getElementById('time').innerHTML = 'TIME '+time;
+}
+
+
+
+function getRndInteger(min, max) {
+  return Math.floor(Math.random() * (max - min + 1) ) + min;
+}
+
+
+function isCollision(x1, y1, x2, y2, minDistance) {
+  let distance = Math.sqrt(Math.pow(x1-x2, 2)+Math.pow(y1-y2, 2));
+  //console.log(x1, y1, x2, y2, minDistance, distance);
+  //console.log(distance, minDistance);
+  if (distance<minDistance) {return true;}
+}
+
+
+
+function restart() {
+  clearInterval(myGameArea.interval);
+  myGameArea.interval = setInterval(updateGameArea, period);
+}
+
+
+
+function changeSpeed(direction) {
+  if (direction==1) {period /= 1.1} else {period *= 1.1};
+  if (period<0.01) {period=0.01};
+  if (period>1000) {period=1000};
+  restart();
+  //console.log(period)
+}
+
+function randomColour(minR, maxR, minG, maxG, minB, maxB) {
+  r = getRndInteger(minR, maxR);
+  g = getRndInteger(minG, maxG);
+  b = getRndInteger(minB, maxB);
+  return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+
+
+function flash() {if (strobe) {strobe=false} else {strobe=true}}
+function toggleGame() {if (game) {game=false} else {game=true}}
+
+
+document.getElementById('faster').addEventListener("click", function() {changeSpeed(1)})
+document.getElementById('slower').addEventListener("click", function() {changeSpeed(0)})
+document.getElementById('more').addEventListener("click", function() {genesis(1,'speciesA'); genesis(1,'speciesB'); genesis(1,'speciesC')})
+document.getElementById('graph').addEventListener("click", plotGraph)
+document.getElementById('flash').addEventListener("click", flash)
+document.getElementById('game').addEventListener("click", toggleGame)
+
+
+
+var btnInterval;
+
+function advancedButtons(theFunc, time, id) {
+  document.getElementById(id).onmousedown = function() {btnInterval = setInterval(theFunc, time)}
+  document.getElementById(id).onmouseup = function() {clearInterval(btnInterval);}
+  document.getElementById(id).onmouseleave = function() {clearInterval(btnInterval);}
+  document.getElementById(id).ontouchstart = function() {btnInterval = setInterval(theFunc, time)}
+  document.getElementById(id).ontouchend = function() {clearInterval(btnInterval);}
+}
+
+advancedButtons(function(){changeSpeed(1)}, 20, 'faster');
+advancedButtons(function(){changeSpeed(0)}, 20, 'slower');
+advancedButtons(function(){genesis(1,'speciesA'); genesis(1,'speciesB'); genesis(1,'speciesC')}, 20, 'more');
+
+
+
+alleleFreqs = {'speciesA':{}, 'speciesB':{}, 'speciesC': {}}
+
+for (var i = 0; i < genes.length; i++) {
+  alleleFreqs['speciesA'][genes[i]] = []
+  alleleFreqs['speciesB'][genes[i]] = []
+  alleleFreqs['speciesC'][genes[i]] = []
+}
+
+//console.log(alleleFreqs)
+
+function recordData() {
+  
+  t.push(time);
+  popA.push(organisms['speciesA'].length);
+  popB.push(organisms['speciesB'].length);
+  popC.push(organisms['speciesC'].length);
+
+  let pop = organisms['speciesA'].length
+
+  for (var i = 0; i < genes.length; i++) {
+    count = 0
+    for (var j = 0; j < pop; j++) {
+      thingy = organisms['speciesA'][j].genome
+      count += char_count(thingy,genes[i])
+    }
+    alleleFreqs['speciesA'][genes[i]].push(count/pop/2)
+  }
+
+  pop = organisms['speciesB'].length
+  for (var i = 0; i < genes.length; i++) {
+    count = 0
+    for (var j = 0; j < pop; j++) {
+      thingy = organisms['speciesB'][j].genome
+      count += char_count(thingy,genes[i])
+    }
+    alleleFreqs['speciesB'][genes[i]].push(count/pop/2)
+  }
+
+  pop = organisms['speciesC'].length
+  for (var i = 0; i < genes.length; i++) {
+    count = 0
+    for (var j = 0; j < pop; j++) {
+      thingy = organisms['speciesC'][j].genome
+      count += char_count(thingy,genes[i])
+    }
+    alleleFreqs['speciesC'][genes[i]].push(count/pop/2)
+  }
+
+  let ecomass = 0
+
+  for (var species in organisms) {
+    let totalBiomass = 0
+    for (var i = 0; i < organisms[species].length; i++) {
+      totalBiomass += organisms[species][i].area
+    }
+    biomass[species].push(totalBiomass)
+    ecomass += totalBiomass
+  }
+
+  if (time%100==0) {console.log('ecomass', ecomass)}
+
+}
+
+function char_count(str, letter) 
+{
+ var letter_Count = 0;
+ for (var position = 0; position < str.length; position++) 
+ {
+    if (str.charAt(position) == letter) 
+      {
+      letter_Count += 1;
+      }
+  }
+  return letter_Count;
+}
+
+
+
+
+
+
+function plotGraph() {
+
+
+  colours = []
+
+  for (var i = 0; i < genes.length; i++) {
+    colours.push(randomColour(0,256,0,256,0,256))
+  }
+
+
+
+  traces = []
+
+
+  traces[0] = {
+    x: t,
+    y: popA,
+    name: 'Species A',
+    mode: 'lines',
+    line: {
+      color: 'red',
+      width: 1
+    }
+  };
+
+  traces[1] = {
+    x: t,
+    y: popB,
+    name: 'Species B',
+    mode: 'lines',
+    line: {
+      color: 'green',
+      width: 1
+    }
+  };
+
+  traces[2] = {
+    x: t,
+    y: popC,
+    name: 'Species C',
+    mode: 'lines',
+    line: {
+      color: 'blue',
+      width: 1
+    }
+  };
+
+
+  var layout = {
+    title:'Populations',
+    plot_bgcolor:"black",
+    paper_bgcolor:"black",
+    showlegend: false,
+    font: {
+      family: 'Roboto',
+      size: 12,
+      color: 'white'
+    }
+  };
+
+  Plotly.newPlot('pop', traces, layout);
+
+
+
+  traces = []
+
+  for (var i = 0; i < genes.length; i++) {
+    traces[i] = {
+      x: t,
+      y: alleleFreqs['speciesA'][genes[i]],
+      name: phenotypes[genes[i]],
+      mode: 'lines',
+      line: {
+        color: colours[i],
+        width: 1
+      }
+    }
+  }
+
+
+  layout = {
+    title:'Allele Frequencies, Red Species',
+    plot_bgcolor:"black",
+    paper_bgcolor:"black",
+    showlegend: false,
+    font: {
+      family: 'Roboto',
+      size: 12,
+      color: 'white'
+    }
+  };
+
+  Plotly.newPlot('alleleA', traces, layout);
+
+  traces = []
+
+  for (var i = 0; i < genes.length; i++) {
+    traces[i] = {
+      x: t,
+      y: alleleFreqs['speciesB'][genes[i]],
+      name: phenotypes[genes[i]],
+      mode: 'lines',
+      line: {
+        color: colours[i],
+        width: 1
+      }
+    }
+  }
+
+  layout = {
+    title:'Allele Frequencies, Green Species',
+    plot_bgcolor:"black",
+    paper_bgcolor:"black",
+    showlegend: false,
+    font: {
+      family: 'Roboto',
+      size: 12,
+      color: 'white'
+    }
+  };
+
+  Plotly.newPlot('alleleB', traces, layout);
+
+  traces = []
+
+  for (var i = 0; i < genes.length; i++) {
+    traces[i] = {
+      x: t,
+      y: alleleFreqs['speciesC'][genes[i]],
+      name: phenotypes[genes[i]],
+      mode: 'lines',
+      line: {
+        color: colours[i],
+        width: 1
+      }
+    }
+  }
+
+  layout = {
+    title:'Allele Frequencies, Blue Species ',
+    plot_bgcolor:"black",
+    paper_bgcolor:"black",
+    showlegend: false,
+    font: {
+      family: 'Roboto',
+      size: 12,
+      color: 'white'
+    }
+  };
+
+  Plotly.newPlot('alleleC', traces, layout);
+
+  rgb = ['red','green','blue']
+
+  traces = []
+
+  for (var i = 0; i < species.length; i++) {
+    traces[i] = {
+      x: t,
+      y: biomass[species[i]],
+      name: species[i],
+      mode: 'lines',
+      line: {
+        color: rgb[i],
+        width: 1
+      }
+    }
+  }
+
+  layout = {
+    title:'Biomass',
+    plot_bgcolor:"black",
+    paper_bgcolor:"black",
+    showlegend: false,
+    font: {
+      family: 'Roboto',
+      size: 12,
+      color: 'white'
+    }
+  };
+
+  Plotly.newPlot('biomass', traces, layout);
+
+}
+
+
+
+function findBearingold(x1,y1,x2,y2) {
+  let a = Math.sqrt(Math.pow(x1-x2,2))
+  let b = Math.sqrt(Math.pow(y1-y2,2))
+  //console.log(a,b)
+  let bearing = Math.atan(a/b)
+  bearing = bearing * (180/Math.PI)
+  if (x1<x2 && y1>y2) {bearing+=0}
+  if (x1<x2 && y1<y2) {bearing+=90}
+  if (x1>x2 && y1<y2) {bearing+=180}
+  if (x1>x2 && y1>y2) {bearing+=270}
+  return bearing //*(Math.PI/180)
+}
+
+
+function findBearing(x1,y1,x2,y2) {
+  let a = Math.sqrt(Math.pow(x1-x2,2))
+  let b = Math.sqrt(Math.pow(y1-y2,2))
+  //console.log(a,b)
+  let bearing = 0
+  if (x1<x2 && y1>y2) {
+    bearing = Math.atan(a/b) * (180/Math.PI)
+    bearing+=0
+  }
+  if (x1<x2 && y1<y2) {
+    bearing = Math.atan(b/a) * (180/Math.PI)
+    bearing+=90
+  }
+  if (x1>x2 && y1<y2) {
+    bearing = Math.atan(a/b) * (180/Math.PI)
+    bearing+=180
+  }
+  if (x1>x2 && y1>y2) {
+    bearing = Math.atan(b/a) * (180/Math.PI)
+    bearing+=270
+  }
+  return bearing //*(Math.PI/180)
+}
+
+
+
+function findBearing1(x1,y1,x2,y2) {
+  let a = x2-x1
+  let b = y2-y1
+  //console.log(a,b)
+  let bearing = Math.atan(a/b)
+  bearing = bearing * (180/Math.PI)
+  if (bearing<0) {bearing += 360}
+  return bearing //*(Math.PI/180)
+}
+
+console.log(findBearing(1,1,10,3))
+console.log(findBearing(1,3,3,1))
+console.log(findBearing(3,1,1,3))
+console.log(findBearing(3,3,1,1))
+
+
+function turnAway1(prey, myBearing, hisBearing, right, left) {
+  //console.log(myBearing)
+  let x = myBearing * (180/Math.PI)
+  let y = hisBearing
+  //console.log('xy',Math.round(x),Math.round(y))
+  //if (y<0) {y += 360}
+  y = y - x
+  if (y<0) {y += 360}
+  //console.log('y',y)
+  let visionAngle = 90*prey.escapeFactor
+  if (y<visionAngle) {return -left*5} else if (y>360-visionAngle) {return right*5} else {return 0}
+}
+
+function turnAway(prey, myBearing, hisBearing, left, right) {
+  //console.log(myBearing)
+  let x = myBearing * (180/Math.PI)
+  let y = hisBearing
+  //console.log('xy',Math.round(x),Math.round(y))
+  //if (y<0) {y += 360}
+  y = y - x
+  if (y<0) {y += 360}
+  //console.log('y',y)
+  let visionAngle = 90*prey.escapeFactor
+  if (y<visionAngle) {return -left} else if (y>360-visionAngle) {return right} else {return 0}
+}
+
+//console.log(turnAway(0,90))
+//console.log(turnAway(0,200))
+
+//console.log(turnAway(0,findBearing(1,1,3,3)))
+//console.log(turnAway(0,findBearing(1,3,3,1)))
+//console.log(turnAway(0,findBearing(3,1,1,3)))
+//console.log(turnAway(0,findBearing(3,3,1,1)))
+
+//console.log(turnAway(180,findBearing(1,1,3,3)))
+//console.log(turnAway(180,findBearing(1,3,3,1)))
+//console.log(turnAway(180,findBearing(3,1,1,3)))
+//console.log(turnAway(180,findBearing(3,3,1,1)))
+
+//console.log(turnAway(180,190))
+
+
+
+
+function escape(species) {
+  for (var i = 0; i < organisms[species].length; i++) {
+    let safe = true;
+    for (var otherSpecies in organisms) {
+      //console.log(otherSpecies)
+      if (otherSpecies!=species) {
+        for (var j = 0; j < organisms[otherSpecies].length; j++) {
+          let prey = organisms[species][i]
+          let pred = organisms[otherSpecies][j]
+          //console.log(pred,prey)
+          if (!pred.dying && isCollision(pred.x, pred.y, prey.x, prey.y, 200)) {
+            if (pred.area>prey.area) {
+              let bearing = findBearing(prey.x,prey.y,pred.x,pred.y)
+              prey.moveAngle += turnAway(prey.angle,bearing,prey.angleFactorRight,prey.angleFactorLeft);
+              console.log('angle', prey.moveAngle)
+              safe = false;
+            }
+          }
+        }
+      }
+    }
+    if (safe) {
+      console.log('safe')
+      if (prey.moveAngle<0) {prey.moveAngle+=1} else if (prey.moveAngle>0) {prey.moveAngle-=1}
+    }
+  }
+}
+
+function escapeNew(prey) {
+  //console.log('funcOpen')
+  let safe = true;
+  for (var otherSpecies in organisms) {
+    //console.log(otherSpecies)
+    if (otherSpecies!=species) {
+      for (var i = 0; i < organisms[otherSpecies].length; i++) {
+        let pred = organisms[otherSpecies][i]
+        //console.log(pred,prey)
+        if (!pred.dying && isCollision(pred.x, pred.y, prey.x, prey.y, 100*prey.escapeFactor)) { //*prey.escapeFactor
+          if (pred.area>prey.area) {
+            //console.log('predator detected')
+            let bearing = findBearing(prey.x,prey.y,pred.x,pred.y)
+            prey.moveAngle += turnAway(prey,prey.angle,bearing,prey.angleFactorRight,prey.angleFactorLeft);
+            //console.log('angle', prey.moveAngle)
+            safe = false;
+            break;
+          }
+        }
+      }
+    }
+  }
+  if (safe) {
+    //console.log('safe')
+    if (prey.moveAngle<0) {prey.moveAngle+=1} else if (prey.moveAngle>0) {prey.moveAngle-=1}
+  }
+}
+
+    </script>
+    
+  </body>
+</html>
+
