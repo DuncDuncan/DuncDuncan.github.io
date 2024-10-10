@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Flowers</title>
+    <style>
+      * {
+  color: white
+}
+
+.imageContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image {
+  //border: 5px solid black;
+}
+
+body {
+  background-color: black;
+  text-align: center;
+  margin: 0;
+}
+    </style>
+  </head>
+  <body>
+    <script>
+      var indx,
+data,
+intvl = 500,
+place = 0,
+minW = 165,
+minH = 165*0.75,
+w = calculateW(),
+h = calculateH(),
+n = calculateN()[2],
+xg = calculateN()[0],
+yg = calculateN()[1],
+intvl = 2500/n,
+commonSubString = ''
+
+var xhr = new XMLHttpRequest();
+//xhr.open('GET', 'data.txt', true);
+xhr.open('GET', 'https://raw.githubusercontent.com/DuncDuncan/pikidedia/main/flowers1', true);
+//xhr.open('GET', 'https://raw.githubusercontent.com/DuncDuncan/pikidedia/main/dogs', true);
+
+// If specified, responseType must be empty string or "text"
+xhr.responseType = 'text';
+
+xhr.onload = function () {
+    if (xhr.readyState === xhr.DONE) {
+        if (xhr.status === 200) {
+            data = xhr.response
+            data = data.split("\n")
+            findCommonSubString()
+            //data = shuffle(data)
+            indx = getRndInteger(0, data.length)
+            addPics()
+            main = setInterval(changePic, intvl)
+        }
+    }
+};
+
+xhr.send(null);
+
+function calculateW() {
+  var x = window.innerWidth/minW
+  var y = Math.floor(x)
+  var z = x/y
+  return minW*z
+}
+
+function calculateH() {
+  var x = window.innerHeight/minH
+  var y = Math.floor(x)
+  var z = x/y
+  return minH*z
+}
+
+function calculateN() {
+  var x = Math.floor(window.innerWidth/minW)
+  var y = Math.floor(window.innerHeight/(minH))
+  return [x,y,x*y]
+}
+
+function calculateTop(i) {
+  //console.log(Math.floor(i/xg))
+  return Math.floor(i/xg)
+}
+
+function calculateLeft(i) {
+  console.log(i%xg)
+  return i%xg
+}
+
+function addPics() {
+  for (let i = 0; i < n; i++) {
+    document.body.insertAdjacentHTML("beforeend", '<div class="imageContainer" id="c'+i+'"><img class="image" id="i'+i+'" src=""><p></p></img></div>');
+    var elem = document.getElementById("c"+i)
+    var top = calculateTop(i)
+    var left = calculateLeft(i)
+    elem.style.top = h*top +'px'
+    elem.style.left = w*left + 'px'
+    elem.style.height = h +'px'
+    elem.style.width = w + 'px'
+    console.log(top, left)
+  }
+}
+
+function changePic() {
+  var link = data[indx]
+  var elem = document.getElementById("i"+place)
+  elem.src = commonSubString + link
+  indx += 1
+  indx = indx % data.length
+  place += 1
+  place = place % n
+}
+
+function findCommonSubString() {
+  if (data[0].includes('<commonSubString>')) {
+    commonSubString = data[0].replace('<commonSubString>','')
+    data.shift()
+  }
+}
+
+function getRndInteger(min, max) {
+  return Math.floor(Math.random() * (max - min + 1) ) + min;
+}
+
+function changeSpeed(x) {
+  clearInterval(main)
+  intvl += 1*x
+  if (intvl<0) {intvl=0}
+  if (intvl>10000) {intvl=10000}
+  main = setInterval(changePic, intvl)
+}
+
+document.body.onkeydown = function (e) {
+  if (e.keyCode == 37) {//left
+    changeSpeed(-1)
+  }
+  if (e.keyCode == 38) {//up
+    changeSpeed(-1)
+  }
+  if (e.keyCode == 39) {//right
+    changeSpeed(-1)
+  }
+  if (e.keyCode == 40) {//down
+    changeSpeed(1)
+  }
+}
+
+function shuffle(array) {
+  let currentIndex = array.length,  randomIndex;
+
+  // While there remain elements to shuffle...
+  while (currentIndex != 0) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+
+  return array;
+}
+    </script>
+  </body>
+</html>
