@@ -104,13 +104,34 @@ const elChinese = document.getElementById('chinese');
 const elPinyin = document.getElementById('pinyin');
 const elPhonetic = document.getElementById('phonetic');
 
-// Function to speak Chinese text using the browser's speech synthesis engine
+// Find a matching voice from the system engine
+function getChineseVoice() {
+    const voices = window.speechSynthesis.getVoices();
+    // Searches for any variation of Chinese locale string (like zh-CN, zh_CN, zh-HK)
+    return voices.find(v => v.lang.toLowerCase().includes('zh') || v.lang.toLowerCase().includes('cmn'));
+}
+
+// Ensure voices are warmed up on mobile engines
+if (window.speechSynthesis.onvoiceschanged !== undefined) {
+    window.speechSynthesis.onvoiceschanged = getChineseVoice;
+}
+
 function speakChinese(text) {
-    // Cancel any speech currently playing to avoid overlaps
     window.speechSynthesis.cancel();
     
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'zh-CN'; // Force the language to Chinese Mandarin
+    const targetVoice = getChineseVoice();
+    
+    if (targetVoice) {
+        // Essential patch for Android Chrome / Samsung Browser compatibility
+        utterance.voice = targetVoice;
+        utterance.lang = targetVoice.lang;
+        utterance.voiceURI = targetVoice.voiceURI;
+    } else {
+        // Fallback strategy if systems haven't loaded profiles yet
+        utterance.lang = 'zh-CN';
+    }
+    
     window.speechSynthesis.speak(utterance);
 }
 
@@ -124,7 +145,6 @@ function updateCard() {
         elPinyin.textContent = currentFood.pinyin;
         elPhonetic.textContent = currentFood.phonetic;
         
-        // Trigger the voice when the card is revealed
         speakChinese(currentFood.chinese);
     } else {
         elChinese.textContent = "";
@@ -144,7 +164,6 @@ document.body.addEventListener('click', () => {
     }
 });
 
-// Initialize the first flashcard
 updateCard();
 </script>
 
