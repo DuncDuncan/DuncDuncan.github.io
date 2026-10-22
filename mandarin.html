@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chinese Food Flashcards</title>
+
+<style>
+body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #111;
+    color: white;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    cursor: pointer;
+}
+
+.card {
+    padding: 30px;
+}
+
+.english {
+    font-size: 4rem;
+    font-weight: bold;
+}
+
+.chinese {
+    font-size: 3rem;
+    margin-top: 20px;
+    color: #ffd700;
+}
+
+.pinyin {
+    font-size: 2rem;
+    margin-top: 10px;
+}
+
+.phonetic {
+    font-size: 1.5rem;
+    margin-top: 10px;
+    color: #aaa;
+}
+
+.instructions {
+    position: absolute;
+    bottom: 20px;
+    font-size: 0.9rem;
+    color: #777;
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+    <div id="english" class="english"></div>
+    <div id="chinese" class="chinese"></div>
+    <div id="pinyin" class="pinyin"></div>
+    <div id="phonetic" class="phonetic"></div>
+</div>
+
+<div class="instructions">
+    Click to reveal • Click again for next word
+</div>
+
+<script>
+const foods = [
+    { english: "Apple", chinese: "苹果", pinyin: "píng guǒ", phonetic: "peeng gwor" },
+    { english: "Rice", chinese: "米饭", pinyin: "mǐ fàn", phonetic: "mee fan" },
+    { english: "Noodles", chinese: "面条", pinyin: "miàn tiáo", phonetic: "mee-en tyaow" },
+    { english: "Chicken", chinese: "鸡肉", pinyin: "jī ròu", phonetic: "jee roh" },
+    { english: "Beef", chinese: "牛肉", pinyin: "niú ròu", phonetic: "nyoh roh" },
+    { english: "Fish", chinese: "鱼", pinyin: "yú", phonetic: "yoo" },
+    { english: "Egg", chinese: "鸡蛋", pinyin: "jī dàn", phonetic: "jee dan" },
+    { english: "Bread", chinese: "面包", pinyin: "miàn bāo", phonetic: "mee-en baow" },
+    { english: "Banana", chinese: "香蕉", pinyin: "xiāng jiāo", phonetic: "shyang jyaow" },
+    { english: "Tea", chinese: "茶", pinyin: "chá", phonetic: "chah" }
+];
+
+let currentFood;
+let revealed = false;
+
+function newFood() {
+    currentFood = foods[Math.floor(Math.random() * foods.length)];
+
+    document.getElementById("english").textContent = currentFood.english;
+    document.getElementById("chinese").textContent = "";
+    document.getElementById("pinyin").textContent = "";
+    document.getElementById("phonetic").textContent = "";
+
+    revealed = false;
+}
+
+function reveal() {
+    document.getElementById("chinese").textContent = currentFood.chinese;
+    document.getElementById("pinyin").textContent = currentFood.pinyin;
+    document.getElementById("phonetic").textContent = currentFood.phonetic;
+
+    revealed = true;
+}
+
+document.body.addEventListener("click", () => {
+    if (!revealed) {
+        reveal();
+    } else {
+        newFood();
+    }
+});
+
+newFood();
+</script>
+
+</body>
+</html>
