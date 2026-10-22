@@ -24,30 +24,30 @@ body {
     padding: 30px;
 }
 
-.english {
-    font-size: 2rem;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 15px; /* Adds space between the emoji and the text */
+/* Made the emoji large and consistent in both states */
+.emoji-display {
+    font-size: 5rem;
+    margin-bottom: 10px;
 }
 
 .chinese {
     font-size: 3rem;
     margin-top: 20px;
     color: #ffd700;
+    min-height: 3.5rem; /* Prevents layout shifting when text appears */
 }
 
 .pinyin {
     font-size: 2rem;
     margin-top: 10px;
+    min-height: 2.3rem;
 }
 
 .phonetic {
     font-size: 1.5rem;
     margin-top: 10px;
     color: #aaa;
+    min-height: 1.8rem;
 }
 
 .instructions {
@@ -72,7 +72,8 @@ a {
 <body>
 
 <div class="card">
-    <div id="english" class="english"></div>
+    <!-- Displays ONLY the emoji asset -->
+    <div id="emojiDisplay" class="emoji-display"></div>
     <div id="chinese" class="chinese"></div>
     <div id="pinyin" class="pinyin"></div>
     <div id="phonetic" class="phonetic"></div>
@@ -95,13 +96,13 @@ const foods = [
     { english: "Bread", emoji: "🍞", chinese: "面包", pinyin: "miàn bāo", phonetic: "mee-en baow" },
     { english: "Banana", emoji: "🍌", chinese: "香蕉", pinyin: "xiāng jiāo", phonetic: "shyang jyaow" },
     { english: "Dumplings", emoji: "🥟", chinese: "饺子", pinyin: "jiǎo zi", phonetic: "jyaow dzuh" },
-    { english: "Fried Rice", emoji: "🍚", chinese: "炒饭", pinyin: "chǎo fàn", phonetic: "chaow fan" },
+    { english: "Fried Rice", emoji: "🥡", chinese: "炒饭", pinyin: "chǎo fàn", phonetic: "chaow fan" }, // Changed to Takeout Box to avoid duplicates
     { english: "Soup", emoji: "🥣", chinese: "汤", pinyin: "tāng", phonetic: "tahng" },
     { english: "Vegetables", emoji: "🥬", chinese: "蔬菜", pinyin: "shū cài", phonetic: "shoo tsai" },
     { english: "Pork Bun", emoji: "🥮", chinese: "包子", pinyin: "bāo zi", phonetic: "baow dzuh" },
     { english: "Duck", emoji: "🦆", chinese: "鸭肉", pinyin: "yā ròu", phonetic: "yah roh" },
     { english: "Hotpot", emoji: "🍲", chinese: "火锅", pinyin: "huǒ guō", phonetic: "hwor gwor" },
-    { english: "Tofu", emoji: "⬜", chinese: "豆腐", pinyin: "dòu fu", phonetic: "doh foo" },
+    { english: "Tofu", emoji: "🍢", chinese: "豆腐", pinyin: "dòu fu", phonetic: "doh foo" }, // Changed to Oden/Skewer to visually look like bean curd cubes
     { english: "Tea", emoji: "🍵", chinese: "茶", pinyin: "chá", phonetic: "chah" },
     { english: "Water", emoji: "💧", chinese: "水", pinyin: "shuǐ", phonetic: "shway" },
     { english: "Milk", emoji: "🥛", chinese: "牛奶", pinyin: "niú nǎi", phonetic: "nyoh nai" },
@@ -109,13 +110,26 @@ const foods = [
     { english: "Juice", emoji: "🧃", chinese: "果汁", pinyin: "guǒ zhī", phonetic: "gwor jir" },
     { english: "Beer", emoji: "🍺", chinese: "啤酒", pinyin: "pí jiǔ", phonetic: "pee jyoh" },
     { english: "Dog", emoji: "🐶", chinese: "狗", pinyin: "gǒu", phonetic: "goh" },
-    { english: "Cat", emoji: "🐱", chinese: "猫", pinyin: "māo", phonetic: "maow" }
+    { english: "Cat", emoji: "🐱", chinese: "猫", pinyin: "māo", phonetic: "maow" },
+    { english: "Chili", emoji: "🌶️", chinese: "辣椒", pinyin: "là jiāo", phonetic: "lah jyaow" }, // New addition
+    { english: "Shrimp", emoji: "🍤", chinese: "虾", pinyin: "xiā", phonetic: "shyah" }          // New addition
 ];
+
+// Fisher-Yates Shuffle algorithm to randomize the array elements perfectly
+function shuffleDeck(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+// Shuffle the cards immediately upon loading the script
+shuffleDeck(foods);
 
 let currentIndex = 0;
 let isRevealed = false;
 
-const elEnglish = document.getElementById('english');
+const elEmojiDisplay = document.getElementById('emojiDisplay');
 const elChinese = document.getElementById('chinese');
 const elPinyin = document.getElementById('pinyin');
 const elPhonetic = document.getElementById('phonetic');
@@ -123,11 +137,9 @@ const elPhonetic = document.getElementById('phonetic');
 // Find a matching voice from the system engine
 function getChineseVoice() {
     const voices = window.speechSynthesis.getVoices();
-    // Searches for any variation of Chinese locale string (like zh-CN, zh_CN, zh-HK)
     return voices.find(v => v.lang.toLowerCase().includes('zh') || v.lang.toLowerCase().includes('cmn'));
 }
 
-// Ensure voices are warmed up on mobile engines
 if (window.speechSynthesis.onvoiceschanged !== undefined) {
     window.speechSynthesis.onvoiceschanged = getChineseVoice;
 }
@@ -139,12 +151,10 @@ function speakChinese(text) {
     const targetVoice = getChineseVoice();
     
     if (targetVoice) {
-        // Essential patch for Android Chrome / Samsung Browser compatibility
         utterance.voice = targetVoice;
         utterance.lang = targetVoice.lang;
         utterance.voiceURI = targetVoice.voiceURI;
     } else {
-        // Fallback strategy if systems haven't loaded profiles yet
         utterance.lang = 'zh-CN';
     }
     
@@ -154,15 +164,18 @@ function speakChinese(text) {
 function updateCard() {
     const currentFood = foods[currentIndex];
     
-    elEnglish.innerHTML = `<span>${currentFood.emoji}</span> <span>${currentFood.english}</span>`;
+    // Always render just the emoji string element
+    elEmojiDisplay.innerHTML = `<span>${currentFood.emoji}</span>`;
     
     if (isRevealed) {
+        // Revealed state: Show Chinese vocabulary data tracks
         elChinese.textContent = currentFood.chinese;
         elPinyin.textContent = currentFood.pinyin;
         elPhonetic.textContent = currentFood.phonetic;
         
         speakChinese(currentFood.chinese);
     } else {
+        // Hidden state: Blank out character tracks
         elChinese.textContent = "";
         elPinyin.textContent = "";
         elPhonetic.textContent = "";
