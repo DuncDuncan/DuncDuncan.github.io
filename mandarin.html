@@ -104,16 +104,28 @@ const elChinese = document.getElementById('chinese');
 const elPinyin = document.getElementById('pinyin');
 const elPhonetic = document.getElementById('phonetic');
 
+// Function to speak Chinese text using the browser's speech synthesis engine
+function speakChinese(text) {
+    // Cancel any speech currently playing to avoid overlaps
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'zh-CN'; // Force the language to Chinese Mandarin
+    window.speechSynthesis.speak(utterance);
+}
+
 function updateCard() {
     const currentFood = foods[currentIndex];
     
-    // Inject both the emoji and the text side-by-side
     elEnglish.innerHTML = `<span>${currentFood.emoji}</span> <span>${currentFood.english}</span>`;
     
     if (isRevealed) {
         elChinese.textContent = currentFood.chinese;
         elPinyin.textContent = currentFood.pinyin;
         elPhonetic.textContent = currentFood.phonetic;
+        
+        // Trigger the voice when the card is revealed
+        speakChinese(currentFood.chinese);
     } else {
         elChinese.textContent = "";
         elPinyin.textContent = "";
@@ -123,11 +135,9 @@ function updateCard() {
 
 document.body.addEventListener('click', () => {
     if (!isRevealed) {
-        // First click: reveal the details
         isRevealed = true;
         updateCard();
     } else {
-        // Second click: go to next word and hide details
         isRevealed = false;
         currentIndex = (currentIndex + 1) % foods.length;
         updateCard();
