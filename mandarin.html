@@ -17,6 +17,7 @@ body {
     font-family: Arial, sans-serif;
     text-align: center;
     cursor: pointer;
+    user-select: none; /* Prevents text selection highlighting on rapid clicks */
 }
 
 .card {
@@ -24,8 +25,12 @@ body {
 }
 
 .english {
-    font-size: 4rem;
+    font-size: 2rem;
     font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px; /* Adds space between the emoji and the text */
 }
 
 .chinese {
@@ -79,49 +84,58 @@ a {
 
 <script>
 const foods = [
-    { english: "Apple", chinese: "苹果", pinyin: "píng guǒ", phonetic: "peeng gwor" },
-    { english: "Rice", chinese: "米饭", pinyin: "mǐ fàn", phonetic: "mee fan" },
-    { english: "Noodles", chinese: "面条", pinyin: "miàn tiáo", phonetic: "mee-en tyaow" },
-    { english: "Chicken", chinese: "鸡肉", pinyin: "jī ròu", phonetic: "jee roh" },
-    { english: "Beef", chinese: "牛肉", pinyin: "niú ròu", phonetic: "nyoh roh" },
-    { english: "Fish", chinese: "鱼", pinyin: "yú", phonetic: "yoo" },
-    { english: "Egg", chinese: "鸡蛋", pinyin: "jī dàn", phonetic: "jee dan" },
-    { english: "Bread", chinese: "面包", pinyin: "miàn bāo", phonetic: "mee-en baow" },
-    { english: "Banana", chinese: "香蕉", pinyin: "xiāng jiāo", phonetic: "shyang jyaow" },
-    { english: "Tea", chinese: "茶", pinyin: "chá", phonetic: "chah" }
+    { english: "Apple", emoji: "🍎", chinese: "苹果", pinyin: "píng guǒ", phonetic: "peeng gwor" },
+    { english: "Rice", emoji: "🍚", chinese: "米饭", pinyin: "mǐ fàn", phonetic: "mee fan" },
+    { english: "Noodles", emoji: "🍜", chinese: "面条", pinyin: "miàn tiáo", phonetic: "mee-en tyaow" },
+    { english: "Chicken", emoji: "🍗", chinese: "鸡肉", pinyin: "jī ròu", phonetic: "jee roh" },
+    { english: "Beef", emoji: "🥩", chinese: "牛肉", pinyin: "niú ròu", phonetic: "nyoh roh" },
+    { english: "Fish", emoji: "🐟", chinese: "鱼", pinyin: "yú", phonetic: "yoo" },
+    { english: "Egg", emoji: "🥚", chinese: "鸡蛋", pinyin: "jī dàn", phonetic: "jee dan" },
+    { english: "Bread", emoji: "🍞", chinese: "面包", pinyin: "miàn bāo", phonetic: "mee-en baow" },
+    { english: "Banana", emoji: "🍌", chinese: "香蕉", pinyin: "xiāng jiāo", phonetic: "shyang jyaow" },
+    { english: "Tea", emoji: "🍵", chinese: "茶", pinyin: "chá", phonetic: "chah" }
 ];
 
-let currentFood;
-let revealed = false;
+let currentIndex = 0;
+let isRevealed = false;
 
-function newFood() {
-    currentFood = foods[Math.floor(Math.random() * foods.length)];
+const elEnglish = document.getElementById('english');
+const elChinese = document.getElementById('chinese');
+const elPinyin = document.getElementById('pinyin');
+const elPhonetic = document.getElementById('phonetic');
 
-    document.getElementById("english").textContent = currentFood.english;
-    document.getElementById("chinese").textContent = "";
-    document.getElementById("pinyin").textContent = "";
-    document.getElementById("phonetic").textContent = "";
-
-    revealed = false;
-}
-
-function reveal() {
-    document.getElementById("chinese").textContent = currentFood.chinese;
-    document.getElementById("pinyin").textContent = currentFood.pinyin;
-    document.getElementById("phonetic").textContent = currentFood.phonetic;
-
-    revealed = true;
-}
-
-document.body.addEventListener("click", () => {
-    if (!revealed) {
-        reveal();
+function updateCard() {
+    const currentFood = foods[currentIndex];
+    
+    // Inject both the emoji and the text side-by-side
+    elEnglish.innerHTML = `<span>${currentFood.emoji}</span> <span>${currentFood.english}</span>`;
+    
+    if (isRevealed) {
+        elChinese.textContent = currentFood.chinese;
+        elPinyin.textContent = currentFood.pinyin;
+        elPhonetic.textContent = currentFood.phonetic;
     } else {
-        newFood();
+        elChinese.textContent = "";
+        elPinyin.textContent = "";
+        elPhonetic.textContent = "";
+    }
+}
+
+document.body.addEventListener('click', () => {
+    if (!isRevealed) {
+        // First click: reveal the details
+        isRevealed = true;
+        updateCard();
+    } else {
+        // Second click: go to next word and hide details
+        isRevealed = false;
+        currentIndex = (currentIndex + 1) % foods.length;
+        updateCard();
     }
 });
 
-newFood();
+// Initialize the first flashcard
+updateCard();
 </script>
 
 </body>
