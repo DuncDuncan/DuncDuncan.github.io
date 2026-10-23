@@ -112,7 +112,6 @@ body {
     <div id="pinyin" class="pinyin"></div>
     <div id="phonetic" class="phonetic"></div>
     
-    <!-- Dedicated hardware-waking action target element -->
     <button id="micToggleBtn" class="mic-control-btn">🔴 Click to Turn Mic ON</button>
     <div id="voiceStatus" class="voice-status">Microphone is offline</div>
     
@@ -126,7 +125,6 @@ body {
 </div>
 
 <script>
-// Vocabulary structure re-mapped with specific alternative vocal matching arrays
 const foods = [
     { english: "Water", emoji: "💧", chinese: "水", pinyin: "shuǐ", phonetic: "shway", matches: ["shway", "schway", "show way", "away", "sway", "water"] },
     { english: "Rice", emoji: "🍚", chinese: "米饭", pinyin: "mǐ fàn", phonetic: "mee fan", matches: ["mee fan", "meefan", "mi fan", "me fan"] },
@@ -176,7 +174,6 @@ if (SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    // Set to parse English phonetics matches natively
     recognition.lang = 'en-US'; 
 
     recognition.onstart = () => {
@@ -189,21 +186,20 @@ if (SpeechRecognition) {
     recognition.onresult = (event) => {
         if (processingLock) return;
 
-        let interimTranscript = '';
-        let finalTranscript = '';
+        let liveText = '';
+        // Bulletproof result string compilation loop
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) finalTranscript += event.results[i].transcript;
-            else interimTranscript += event.results[i].transcript;
+            if (event.results[i] && event.results[i][0]) {
+                liveText += event.results[i][0].transcript;
+            }
         }
 
-        const liveText = (finalTranscript || interimTranscript).trim().toLowerCase();
+        liveText = liveText.trim().toLowerCase();
         elDebugText.textContent = liveText || "...";
 
         if (!liveText) return;
 
         const currentFood = foods[currentIndex];
-        
-        // Match against list array alternatives
         const hasMatch = currentFood.matches.some(pattern => liveText.includes(pattern));
 
         if (hasMatch) {
@@ -226,13 +222,13 @@ if (SpeechRecognition) {
     };
 
     recognition.onerror = (e) => {
+        console.log("Mic Error: ", e.error);
         if(e.error === 'not-allowed') {
             elVoiceStatus.textContent = "Permission denied. Check address bar icon!";
         }
     };
 
     recognition.onend = () => {
-        // Keep active looping cleanly only if toggled on manually
         if (isMicOn) { try { recognition.start(); } catch(err){} }
     };
 }
@@ -254,11 +250,10 @@ function updateCard() {
     }
 }
 
-// Dedicated click interface target management
 micToggleBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     if (!recognition) {
-        elVoiceStatus.textContent = "Speech recognition engine un-supported.";
+        elVoiceStatus.textContent = "Speech recognition engine unsupported.";
         return;
     }
 
