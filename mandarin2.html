@@ -156,17 +156,6 @@ const foods = [
     { english: "Beer", emoji: "🍺", chinese: "啤酒", pinyin: "pí jiǔ", phonetic: "pee jyoh", matches: ["pee jyoh", "pi jiu", "pee jo", "pijo", "pee chill", "beer"] }
 ];
 
-// Re-injected Perfect Shuffling Block
-function shuffleDeck(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-}
-
-// Execute shuffle immediately upon app boot sequence
-shuffleDeck(foods);
-
 let currentIndex = 0;
 let isRevealed = false;
 let isMicOn = false;
@@ -215,8 +204,8 @@ if (SpeechRecognition) {
 
         let liveText = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i] && event.results[i][0]) {
-                liveText += event.results[i][0].transcript;
+            if (event.results[i] && event.results[i]) {
+                liveText += event.results[i].transcript;
             }
         }
 
@@ -236,3 +225,14 @@ if (SpeechRecognition) {
             if (!isRevealed) {
                 isRevealed = true;
                 updateCard();
+                setTimeout(() => {
+                    isRevealed = false;
+                    currentIndex = (currentIndex + 1) % foods.length;
+                    processingLock = false;
+                    elDebugText.style.color = "#ffaa00";
+                    updateCard();
+                }, 2000);
+            }
+        }
+    };
+
