@@ -203,9 +203,10 @@ if (SpeechRecognition) {
         if (processingLock) return;
 
         let liveText = '';
+        // Bulletproof result string compilation loop
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i] && event.results[i]) {
-                liveText += event.results[i].transcript;
+            if (event.results[i] && event.results[i][0]) {
+                liveText += event.results[i][0].transcript;
             }
         }
 
@@ -236,3 +237,71 @@ if (SpeechRecognition) {
         }
     };
 
+    recognition.onerror = (e) => {
+        console.log("Mic Error: ", e.error);
+        if(e.error === 'not-allowed') {
+            elVoiceStatus.textContent = "Permission denied. Check address bar icon!";
+        }
+    };
+
+    recognition.onend = () => {
+        if (isMicOn) { try { recognition.start(); } catch(err){} }
+    };
+}
+
+function updateCard() {
+    const currentFood = foods[currentIndex];
+    elEmojiDisplay.innerHTML = `<span>${currentFood.emoji}</span>`;
+    
+    if (isRevealed) {
+        elChinese.textContent = currentFood.chinese;
+        elPinyin.textContent = currentFood.pinyin;
+        elPhonetic.textContent = currentFood.phonetic;
+        speakChinese(currentFood.chinese);
+    } else {
+        elChinese.textContent = "";
+        elPinyin.textContent = "";
+        elPhonetic.textContent = "";
+        elDebugText.textContent = "...";
+    }
+}
+
+micToggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!recognition) {
+        elVoiceStatus.textContent = "Speech recognition engine unsupported.";
+        return;
+    }
+
+    if (!isMicOn) {
+        try {
+            recognition.start();
+        } catch(err) {
+            console.log(err);
+        }
+    } else {
+        isMicOn = false;
+        recognition.stop();
+        micToggleBtn.textContent = "🔴 Click to Turn Mic ON";
+        micToggleBtn.classList.remove('active');
+        elVoiceStatus.textContent = "Microphone is offline";
+    }
+});
+
+elEmojiDisplay.addEventListener('click', () => {
+    if (processingLock) return;
+    if (!isRevealed) {
+        isRevealed = true;
+        updateCard();
+    } else {
+        isRevealed = false;
+        currentIndex = (currentIndex + 1) % foods.length;
+        updateCard();
+    }
+});
+
+updateCard();
+</script>
+
+</body>
+</html>
