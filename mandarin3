@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chinese Food Flashcards - Native Voice</title>
+
+<style>
+body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #111;
+    color: white;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    user-select: none;
+}
+
+.card {
+    padding: 30px;
+    width: 100%;
+    max-width: 500px;
+}
+
+.emoji-display {
+    font-size: 10rem;
+    margin-bottom: 10px;
+}
+
+.chinese {
+    font-size: 3rem;
+    margin-top: 20px;
+    color: #ffd700;
+    min-height: 3.5rem;
+}
+
+.pinyin {
+    font-size: 2rem;
+    margin-top: 10px;
+    min-height: 2.3rem;
+}
+
+.phonetic {
+    font-size: 1.5rem;
+    margin-top: 10px;
+    color: #aaa;
+    min-height: 1.8rem;
+}
+
+/* Mic Button Interface */
+.mic-control-btn {
+    background: #e62117;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 50px;
+    cursor: pointer;
+    margin-top: 15px;
+    box-shadow: 0 4px 15px rgba(230, 33, 23, 0.4);
+    transition: all 0.3s ease;
+}
+
+.mic-control-btn.active {
+    background: #00ffcc;
+    color: #111;
+    box-shadow: 0 4px 15px rgba(0, 255, 204, 0.4);
+}
+
+.voice-status {
+    margin-top: 15px;
+    font-size: 1.2rem;
+    color: #888;
+    min-height: 1.5rem;
+}
+
+.debug-panel {
+    margin-top: 15px;
+    padding: 10px;
+    background: #222;
+    border: 1px dashed #444;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.debug-text {
+    color: #ffd700; /* Changed to gold to represent captured characters */
+    font-weight: bold;
+}
+
+.instructions {
+    position: absolute;
+    bottom: 20px;
+    font-size: 0.9rem;
+    color: #777;
+    left: 0;
+    right: 0;
+}
+</style>
+</head>
+<body>
+
+<div class="card" aria-live="polite">
+    <div id="emojiDisplay" class="emoji-display"></div>
+    <div id="chinese" class="chinese"></div>
+    <div id="pinyin" class="pinyin"></div>
+    <div id="phonetic" class="phonetic"></div>
+    
+    <button id="micToggleBtn" class="mic-control-btn">🔴 Click to Turn Mic ON</button>
+    <div id="voiceStatus" class="voice-status">Microphone is offline</div>
+    
+    <div class="debug-panel">
+        Captured Chinese Text: <span id="debugText" class="debug-text">...</span>
+    </div>
+</div>
+
+<div class="instructions">
+    Turn mic ON • Say the Chinese word aloud • Or click emoji to reveal/skip
+</div>
+
+<script>
+// The array is cleaned up. We match directly against character variations or sounds.
+const foods = [
+    { english: "Dog", emoji: "🐶", chinese: "狗", pinyin: "gǒu", phonetic: "goh", matches: ["狗", "够", "走"] },
+    { english: "Cat", emoji: "🐱", chinese: "猫", pinyin: "māo", phonetic: "maow", matches: ["猫", "毛", "么"] },
+    { english: "Chili", emoji: "🌶️", chinese: "辣椒", pinyin: "là jiāo", phonetic: "lah jyaow", matches: ["辣椒", "拉焦", "辣酱"] },
+    { english: "Shrimp", emoji: "🍤", chinese: "虾", pinyin: "xiā", phonetic: "shyah", matches: ["虾", "瞎", "下"] },
+    { english: "Water", emoji: "💧", chinese: "水", pinyin: "shuǐ", phonetic: "shway", matches: ["水", "谁", "睡"] },
+    { english: "Rice", emoji: "🍚", chinese: "米饭", pinyin: "mǐ fàn", phonetic: "mee fan", matches: ["米饭", "米方", "秘方"] },
+    { english: "Noodles", emoji: "🍜", chinese: "面条", pinyin: "miàn tiáo", phonetic: "mee-en tyaow", matches: ["面条", "面条儿", "面包"] },
+    { english: "Apple", emoji: "🍎", chinese: "苹果", pinyin: "píng guǒ", phonetic: "peeng gwor", matches: ["苹果", "凭过", "平果"] },
+    { english: "Pork", emoji: "🐷", chinese: "猪肉", pinyin: "zhū ròu", phonetic: "joo roh", matches: ["猪肉", "牛肉", "主肉"] },
+    { english: "Chicken", emoji: "🍗", chinese: "鸡肉", pinyin: "jī ròu", phonetic: "jee roh", matches: ["鸡肉", "肌肉", "急肉"] },
+    { english: "Beef", emoji: "🥩", chinese: "牛肉", pinyin: "niú ròu", phonetic: "nyoh roh", matches: ["牛肉", "流肉", "纽肉"] },
+    { english: "Fish", emoji: "🐟", chinese: "鱼", pinyin: "yú", phonetic: "yoo", matches: ["鱼", "于", "雨"] },
+    { english: "Egg", emoji: "🥚", chinese: "鸡蛋", pinyin: "jī dàn", phonetic: "jee dan", matches: ["鸡蛋", "机蛋", "吉林"] },
+    { english: "Bread", emoji: "🍞", chinese: "面包", pinyin: "miàn bāo", phonetic: "mee-en baow", matches: ["面包", "面包含", "面部"] },
+    { english: "Banana", emoji: "🍌", chinese: "香蕉", pinyin: "xiāng jiāo", phonetic: "shyang jyaow", matches: ["香蕉", "相交", "向阳"] },
+    { english: "Dumplings", emoji: "🥟", chinese: "饺子", pinyin: "jiǎo zi", phonetic: "jyaow dzuh" , matches: ["饺子", "角子", "轿子"] },
+    { english: "Fried Rice", emoji: "🥡", chinese: "炒饭", pinyin: "chǎo fàn", phonetic: "chaow fan", matches: ["炒饭", "少妇", "超凡"] },
+    { english: "Soup", emoji: "🥣", chinese: "汤", pinyin: "tāng", phonetic: "tahng", matches: ["汤", "糖", "躺"] },
+    { english: "Vegetables", emoji: "🥬", chinese: "蔬菜", pinyin: "shū cài", phonetic: "shoo tsai", matches: ["蔬菜", "数菜", "舒适"] },
+    { english: "Pork Bun", emoji: "🥮", chinese: "包子", pinyin: "bāo zi", phonetic: "baow dzuh", matches: ["包子", "报纸", "豹子"] },
+    { english: "Duck", emoji: "🦆", chinese: "鸭肉", pinyin: "yā ròu", phonetic: "yah roh", matches: ["鸭肉", "压肉", "呀"] },
+    { english: "Hotpot", emoji: "🍲", chinese: "火锅", pinyin: "huǒ guō", phonetic: "hwor gwor", matches: ["火锅", "获过", "活络"] },
+    { english: "Tofu", emoji: "🍢", chinese: "豆腐", pinyin: "dòu fu", phonetic: "doh foo", matches: ["豆腐", "兜风", "都富"] },
+    { english: "Tea", emoji: "🍵", chinese: "茶", pinyin: "chá", phonetic: "chah", matches: ["茶", "查", "插"] },
+    { english: "Milk", emoji: "🥛", chinese: "牛奶", pinyin: "niú nǎi", phonetic: "nyoh nai", matches: ["牛奶", "流奶", "牛耐"] },
+    { english: "Coffee", emoji: "☕", chinese: "咖啡", pinyin: "kā fēi", phonetic: "kah fay", matches: ["咖啡", "咖妃", "卡非"] },
+    { english: "Juice", emoji: "🧃", chinese: "果汁", pinyin: "guǒ zhī", phonetic: "gwor jir", matches: ["果汁", "国志", "过肢"] },
+    { english: "Beer", emoji: "🍺", chinese: "啤酒", pinyin: "pí jiǔ", phonetic: "pee jyoh", matches: ["啤酒", "皮旧", "脾酒"] }
+];
+
+// Fisher-Yates Shuffle Algorithm to keep cards fresh and randomized
+function shuffleDeck(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+shuffleDeck(foods);
+
+let currentIndex = 0;
+let isRevealed = false;
+let isMicOn = false;
+let processingLock = false;
+
+const elEmojiDisplay = document.getElementById('emojiDisplay');
+const elChinese = document.getElementById('chinese');
+const elPinyin = document.getElementById('pinyin');
+const elPhonetic = document.getElementById('phonetic');
+const elVoiceStatus = document.getElementById('voiceStatus');
+const elDebugText = document.getElementById('debugText');
+const micToggleBtn = document.getElementById('micToggleBtn');
+
+function getChineseVoice() {
+    const voices = window.speechSynthesis.getVoices();
+    return voices.find(v => v.lang.toLowerCase().includes('zh') || v.lang.toLowerCase().includes('cmn'));
+}
+
+function speakChinese(text) {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const targetVoice = getChineseVoice();
+    if (targetVoice) { utterance.voice = targetVoice; utterance.lang = targetVoice.lang; }
+    else { utterance.lang = 'zh-CN'; }
+    window.speechSynthesis.speak(utterance);
+}
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition;
+
+if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    // --- THIS IS THE KEY CHANGE: Engine is now set to Mandarin Chinese ---
+    recognition.lang = 'zh-CN'; 
+
+    recognition.onstart = () => {
+        isMicOn = true;
+        micToggleBtn.textContent = "🟢 Mic is LIVE (Listening Chinese)";
+        micToggleBtn.classList.add('active');
+        elVoiceStatus.textContent = "Speak the Chinese word now...";
+    };
+
+    recognition.onresult = (event) => {
+        if (processingLock) return;
+
+        let liveText = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i] && event.results[i]) {
+                liveText += event.results[i].transcript;
+            }
+        }
+
+        liveText = liveText.trim();
+        elDebugText.textContent = liveText || "...";
+
+        if (!liveText) return;
+
+        const currentFood = foods[currentIndex];
+        
+        // Match directly against the target character or close homophones!
+        const hasMatch = liveText.includes(currentFood.chinese) || currentFood.matches.some(pattern => liveText.includes(pattern));
+
+        if (hasMatch) {
+            processingLock = true;
+            elVoiceStatus.textContent = "Excellent! 正确! 🎉";
+            elDebugText.style.color = "#00ff00";
+            
+            if (!isRevealed) {
+                isRevealed = true;
+                updateCard();
+                setTimeout(() => {
+                    isRevealed = false;
+                    currentIndex = (currentIndex + 1) % foods.length;
+                    processingLock = false;
+                    elDebugText.style.color = "#ffd700";
+                    updateCard();
+                }, 2000);
+            }
+        }
+    };
+
+    recognition.onerror = (e) => {
+        console.log("Mic Error: ", e.error);
+    };
+
+    recognition.onend = () => {
+        if (isMicOn) { try { recognition.start(); } catch(err){} }
+    };
+}
+
+function updateCard() {
+    const currentFood = foods[currentIndex];
+    elEmojiDisplay.innerHTML = `<span>${currentFood.emoji}</span>`;
+    
+    if (isRevealed) {
+        elChinese.textContent = currentFood.chinese;
+        elPinyin.textContent = currentFood.pinyin;
+        elPhonetic.textContent = currentFood.phonetic;
+        speakChinese(currentFood.chinese);
+    } else {
+        elChinese.textContent = "";
+        elPinyin.textContent = "";
