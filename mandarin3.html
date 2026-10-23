@@ -183,6 +183,32 @@ function speakChinese(text) {
     window.speechSynthesis.speak(utterance);
 }
 
+// Helper function to calculate single character mistakes (Levenshtein Distance)
+function isCloseEnough(wordA, wordB, maxMistakes = 1) {
+    const a = wordA.toLowerCase().trim();
+    const b = wordB.toLowerCase().trim();
+
+    if (a === b) return true;
+    if (Math.abs(a.length - b.length) > maxMistakes) return false;
+
+    const matrix = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+
+    for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+    for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+
+    for (let i = 1; i <= a.length; i++) {
+        for (let j = 1; j <= b.length; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            matrix[i][j] = Math.min(
+                matrix[i - 1][j] + 1,      // Deletion
+                matrix[i][j - 1] + 1,      // Insertion
+                matrix[i - 1][j - 1] + cost // Substitution
+            );
+        }
+    }
+    return matrix[a.length][b.length] <= maxMistakes;
+}
+
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition;
 
@@ -203,7 +229,6 @@ if (SpeechRecognition) {
         if (processingLock) return;
 
         let liveText = '';
-        // Bulletproof result string compilation loop
         for (let i = event.resultIndex; i < event.results.length; ++i) {
             if (event.results[i] && event.results[i][0]) {
                 liveText += event.results[i][0].transcript;
@@ -216,7 +241,19 @@ if (SpeechRecognition) {
         if (!liveText) return;
 
         const currentFood = foods[currentIndex];
-        const hasMatch = currentFood.matches.some(pattern => liveText.includes(pattern));
+        
+        // Split the speech stream into individual words to check phonetic fuzzy values
+        const spokenWords = liveText.split(/\s+/);
+
+        const hasMatch = currentFood.matches.some(pattern => {
+            const cleanPattern = pattern.toLowerCase().trim();
+
+            // 1. Direct character containment match (handles pure Chinese or long phrases instantly)
+            if (liveText.includes(cleanPattern)) return true;
+
+            // 2. Fuzzy match calculation for short phonetic English words (e.g. "meow" matching "maow")
+            return spokenWords.some(word => isCloseEnough(word, cleanPattern, 1));
+        });
 
         if (hasMatch) {
             processingLock = true;
@@ -301,6 +338,7 @@ elEmojiDisplay.addEventListener('click', () => {
 });
 
 updateCard();
+
 </script>
 
 </body>
