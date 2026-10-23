@@ -21,7 +21,6 @@ body {
 
 .card {
     padding: 30px;
-    cursor: pointer;
     width: 100%;
     max-width: 500px;
 }
@@ -51,17 +50,34 @@ body {
     min-height: 1.8rem;
 }
 
-/* Enhanced Voice status UI with pulse effects */
-.voice-status {
-    margin-top: 25px;
-    font-size: 1.3rem;
-    color: #00ffcc;
-    min-height: 1.5rem;
+/* Mic Button Interface */
+.mic-control-btn {
+    background: #e62117;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    font-size: 1.2rem;
     font-weight: bold;
-    transition: color 0.2s ease;
+    border-radius: 50px;
+    cursor: pointer;
+    margin-top: 15px;
+    box-shadow: 0 4px 15px rgba(230, 33, 23, 0.4);
+    transition: all 0.3s ease;
 }
 
-/* Diagnostic Box for Debugging */
+.mic-control-btn.active {
+    background: #00ffcc;
+    color: #111;
+    box-shadow: 0 4px 15px rgba(0, 255, 204, 0.4);
+}
+
+.voice-status {
+    margin-top: 15px;
+    font-size: 1.2rem;
+    color: #888;
+    min-height: 1.5rem;
+}
+
 .debug-panel {
     margin-top: 15px;
     padding: 10px;
@@ -70,11 +86,9 @@ body {
     border-radius: 6px;
     font-family: monospace;
     font-size: 0.9rem;
-    color: #888;
-    max-width: 80%;
-    margin-left: auto;
-    margin-right: auto;
+    color: #666;
 }
+
 .debug-text {
     color: #ffaa00;
     font-weight: bold;
@@ -88,77 +102,50 @@ body {
     left: 0;
     right: 0;
 }
-
-button, input, select, textarea, a {
-  outline: none;
-}
-
-* {
-  -webkit-tap-highlight-color: transparent;
-}
 </style>
 </head>
 <body>
 
-<div class="card" id="cardContainer" aria-live="polite">
+<div class="card" aria-live="polite">
     <div id="emojiDisplay" class="emoji-display"></div>
     <div id="chinese" class="chinese"></div>
     <div id="pinyin" class="pinyin"></div>
     <div id="phonetic" class="phonetic"></div>
-    <div id="voiceStatus" class="voice-status">Tap Screen to Enable Mic</div>
     
-    <!-- Live Transcript Debugger Window -->
+    <!-- Dedicated hardware-waking action target element -->
+    <button id="micToggleBtn" class="mic-control-btn">🔴 Click to Turn Mic ON</button>
+    <div id="voiceStatus" class="voice-status">Microphone is offline</div>
+    
     <div class="debug-panel">
-        Live Mic Output: <span id="debugText" class="debug-text">...</span>
+        Live Mic Transcription: <span id="debugText" class="debug-text">...</span>
     </div>
 </div>
 
 <div class="instructions">
-    Click card to skip/reveal • Or say the word aloud to advance!
+    Turn mic ON • Say your answer aloud • Or click emoji to reveal/skip
 </div>
 
 <script>
+// Vocabulary structure re-mapped with specific alternative vocal matching arrays
 const foods = [
-    { english: "Apple", emoji: "🍎", chinese: "苹果", pinyin: "píng guǒ", phonetic: "peeng gwor" },
-    { english: "Pork", emoji: "🐷", chinese: "猪肉", pinyin: "zhū ròu", phonetic: "joo roh" },
-    { english: "Rice", emoji: "🍚", chinese: "米饭", pinyin: "mǐ fàn", phonetic: "mee fan" },
-    { english: "Noodles", emoji: "🍜", chinese: "面条", pinyin: "miàn tiáo", phonetic: "mee-en tyaow" },
-    { english: "Chicken", emoji: "🍗", chinese: "鸡肉", pinyin: "jī ròu", phonetic: "jee roh" },
-    { english: "Beef", emoji: "🥩", chinese: "牛肉", pinyin: "niú ròu", phonetic: "nyoh roh" },
-    { english: "Fish", emoji: "🐟", chinese: "鱼", pinyin: "yú", phonetic: "yoo" },
-    { english: "Egg", emoji: "🥚", chinese: "鸡蛋", pinyin: "jī dàn", phonetic: "jee dan" },
-    { english: "Bread", emoji: "🍞", chinese: "面包", pinyin: "miàn bāo", phonetic: "mee-en baow" },
-    { english: "Banana", emoji: "🍌", chinese: "香蕉", pinyin: "xiāng jiāo", phonetic: "shyang jyaow" },
-    { english: "Dumplings", emoji: "🥟", chinese: "饺子", pinyin: "jiǎo zi", phonetic: "jyaow dzuh" },
-    { english: "Fried Rice", emoji: "🥡", chinese: "炒饭", pinyin: "chǎo fàn", phonetic: "chaow fan" }, 
-    { english: "Soup", emoji: "🥣", chinese: "汤", pinyin: "tāng", phonetic: "tahng" },
-    { english: "Vegetables", emoji: "🥬", chinese: "蔬菜", pinyin: "shū cài", phonetic: "shoo tsai" },
-    { english: "Pork Bun", emoji: "🥮", chinese: "包子", pinyin: "bāo zi", phonetic: "baow dzuh" },
-    { english: "Duck", emoji: "🦆", chinese: "鸭肉", pinyin: "yā ròu", phonetic: "yah roh" },
-    { english: "Hotpot", emoji: "🍲", chinese: "火锅", pinyin: "huǒ guō", phonetic: "hwor gwor" },
-    { english: "Tofu", emoji: "🍢", chinese: "豆腐", pinyin: "dòu fu", phonetic: "doh foo" }, 
-    { english: "Tea", emoji: "🍵", chinese: "茶", pinyin: "chá", phonetic: "chah" },
-    { english: "Water", emoji: "💧", chinese: "水", pinyin: "shuǐ", phonetic: "shway" },
-    { english: "Milk", emoji: "🥛", chinese: "牛奶", pinyin: "niú nǎi", phonetic: "nyoh nai" },
-    { english: "Coffee", emoji: "☕", chinese: "咖啡", pinyin: "kā fēi", phonetic: "kah fay" },
-    { english: "Juice", emoji: "🧃", chinese: "果汁", pinyin: "guǒ zhī", phonetic: "gwor jir" },
-    { english: "Beer", emoji: "🍺", chinese: "啤酒", pinyin: "pí jiǔ", phonetic: "pee jyoh" },
-    { english: "Chili", emoji: "🌶️", chinese: "辣椒", pinyin: "là jiāo", phonetic: "lah jyaow" }, 
-    { english: "Shrimp", emoji: "🍤", chinese: "虾", pinyin: "xiā", phonetic: "shyah" }          
+    { english: "Water", emoji: "💧", chinese: "水", pinyin: "shuǐ", phonetic: "shway", matches: ["shway", "schway", "show way", "away", "sway", "water"] },
+    { english: "Rice", emoji: "🍚", chinese: "米饭", pinyin: "mǐ fàn", phonetic: "mee fan", matches: ["mee fan", "meefan", "mi fan", "me fan"] },
+    { english: "Noodles", emoji: "🍜", chinese: "面条", pinyin: "miàn tiáo", phonetic: "mee-en tyaow", matches: ["mee en tyaow", "mien tyaow", "meen tyaow", "noodles"] },
+    { english: "Apple", emoji: "🍎", chinese: "苹果", pinyin: "píng guǒ", phonetic: "peeng gwor", matches: ["peeng gwor", "ping gwor", "pink war", "apple"] },
+    { english: "Pork", emoji: "🐷", chinese: "猪肉", pinyin: "zhū ròu", phonetic: "joo roh", matches: ["joo roh", "drew row", "ju row", "pork"] },
+    { english: "Chicken", emoji: "🍗", chinese: "鸡肉", pinyin: "jī ròu", phonetic: "jee roh", matches: ["jee roh", "g row", "gee roh", "chicken"] },
+    { english: "Beef", emoji: "🥩", chinese: "牛肉", pinyin: "niú ròu", phonetic: "nyoh roh", matches: ["nyoh roh", "neo row", "new row", "beef"] },
+    { english: "Fish", emoji: "🐟", chinese: "鱼", pinyin: "yú", phonetic: "yoo", matches: ["yoo", "you", "yu", "fish"] },
+    { english: "Egg", emoji: "🥚", chinese: "鸡蛋", pinyin: "jī dàn", phonetic: "jee dan", matches: ["jee dan", "g dan", "gee dan", "egg"] },
+    { english: "Bread", emoji: "🍞", chinese: "面包", pinyin: "miàn bāo", phonetic: "mee-en baow", matches: ["mee en baow", "men bow", "mien bao", "bread"] },
+    { english: "Dumplings", emoji: "🥟", chinese: "饺子", pinyin: "jiǎo zi", phonetic: "jyaow dzuh" , matches: ["jyaow dzuh", "jiao zi", "shell za", "dumplings"] },
+    { english: "Tea", emoji: "🍵", chinese: "茶", pinyin: "chá", phonetic: "chah", matches: ["chah", "cha", "tea"] }
 ];
-
-function shuffleDeck(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-}
-
-shuffleDeck(foods);
 
 let currentIndex = 0;
 let isRevealed = false;
-let isTimeoutActive = false;
+let isMicOn = false;
+let processingLock = false;
 
 const elEmojiDisplay = document.getElementById('emojiDisplay');
 const elChinese = document.getElementById('chinese');
@@ -166,9 +153,8 @@ const elPinyin = document.getElementById('pinyin');
 const elPhonetic = document.getElementById('phonetic');
 const elVoiceStatus = document.getElementById('voiceStatus');
 const elDebugText = document.getElementById('debugText');
-const cardContainer = document.getElementById('cardContainer');
+const micToggleBtn = document.getElementById('micToggleBtn');
 
-// --- Text To Speech Engine ---
 function getChineseVoice() {
     const voices = window.speechSynthesis.getVoices();
     return voices.find(v => v.lang.toLowerCase().includes('zh') || v.lang.toLowerCase().includes('cmn'));
@@ -178,95 +164,77 @@ function speakChinese(text) {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     const targetVoice = getChineseVoice();
-    if (targetVoice) {
-        utterance.voice = targetVoice;
-        utterance.lang = targetVoice.lang;
-    } else {
-        utterance.lang = 'zh-CN';
-    }
+    if (targetVoice) { utterance.voice = targetVoice; utterance.lang = targetVoice.lang; }
+    else { utterance.lang = 'zh-CN'; }
     window.speechSynthesis.speak(utterance);
 }
 
-// --- Speech Recognition Engine ---
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition;
 
 if (SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.continuous = true;
-    // Enable interim results so users see the words instantly as they speak!
-    recognition.interimResults = true; 
-    recognition.lang = 'zh-CN'; 
+    recognition.interimResults = true;
+    // Set to parse English phonetics matches natively
+    recognition.lang = 'en-US'; 
 
     recognition.onstart = () => {
-        elVoiceStatus.textContent = "🎙️ Listening... Speak Now";
-        elVoiceStatus.style.color = "#00ffcc";
-    };
-
-    recognition.onspeechstart = () => {
-        elVoiceStatus.textContent = "🔊 Processing Audio...";
-        elVoiceStatus.style.color = "#ffaa00";
+        isMicOn = true;
+        micToggleBtn.textContent = "🟢 Mic is LIVE (Listening)";
+        micToggleBtn.classList.add('active');
+        elVoiceStatus.textContent = "Say the word aloud...";
     };
 
     recognition.onresult = (event) => {
-        if (isTimeoutActive) return; // Prevent parsing inputs while loading next card
+        if (processingLock) return;
 
         let interimTranscript = '';
         let finalTranscript = '';
-
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-                finalTranscript += event.results[i][0].transcript;
-            } else {
-                interimTranscript += event.results[i][0].transcript;
-            }
+            if (event.results[i].isFinal) finalTranscript += event.results[i].transcript;
+            else interimTranscript += event.results[i].transcript;
         }
 
         const liveText = (finalTranscript || interimTranscript).trim().toLowerCase();
-        
-        // Output exactly what the computer captures directly into our debug element
         elDebugText.textContent = liveText || "...";
 
         if (!liveText) return;
 
         const currentFood = foods[currentIndex];
-        const cleanChinese = currentFood.chinese;
         
-        // Strip punctuation and spaces out of target matching tracks
-        const cleanPhonetic = currentFood.phonetic.toLowerCase().replace(/[^a-z]/g, '');
-        const normalizedLive = liveText.replace(/[^a-z\u4e00-\u9fa5]/g, '');
+        // Match against list array alternatives
+        const hasMatch = currentFood.matches.some(pattern => liveText.includes(pattern));
 
-        // Check against both true characters and raw phonetics paths
-        if (liveText.includes(cleanChinese) || liveText.includes(cleanPhonetic) || normalizedLive.includes(cleanPhonetic)) {
-            isTimeoutActive = true;
-            elVoiceStatus.textContent = "Correct! 🎉";
-            elVoiceStatus.style.color = "#00ff00";
+        if (hasMatch) {
+            processingLock = true;
+            elVoiceStatus.textContent = "Correct Match detected! 🎉";
+            elDebugText.style.color = "#00ff00";
             
             if (!isRevealed) {
                 isRevealed = true;
                 updateCard();
                 setTimeout(() => {
-                    goToNextCard();
-                    isTimeoutActive = false;
+                    isRevealed = false;
+                    currentIndex = (currentIndex + 1) % foods.length;
+                    processingLock = false;
+                    elDebugText.style.color = "#ffaa00";
+                    updateCard();
                 }, 2000);
             }
         }
     };
 
     recognition.onerror = (e) => {
-        console.log("Speech Error: ", e.error);
-        if (e.error === 'not-allowed') {
-            elVoiceStatus.textContent = "❌ Mic Blocked! Allow mic access.";
-            elVoiceStatus.style.color = "#ff3333";
+        if(e.error === 'not-allowed') {
+            elVoiceStatus.textContent = "Permission denied. Check address bar icon!";
         }
     };
 
     recognition.onend = () => {
-        // Automatically wake up the mic loop safely
-        try { recognition.start(); } catch(e){}
+        // Keep active looping cleanly only if toggled on manually
+        if (isMicOn) { try { recognition.start(); } catch(err){} }
     };
-} else {
-    elVoiceStatus.textContent = "Web Speech API not supported.";
 }
 
 function updateCard() {
@@ -283,20 +251,46 @@ function updateCard() {
         elPinyin.textContent = "";
         elPhonetic.textContent = "";
         elDebugText.textContent = "...";
-        elVoiceStatus.textContent = "🎙️ Listening... Speak Now";
-        elVoiceStatus.style.color = "#00ffcc";
     }
 }
 
-function goToNextCard() {
-    isRevealed = false;
-    currentIndex = (currentIndex + 1) % foods.length;
-    updateCard();
-}
-
-cardContainer.addEventListener('click', (e) => {
+// Dedicated click interface target management
+micToggleBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (recognition) {
-        try { recognition.start(); } catch(err) {}
+    if (!recognition) {
+        elVoiceStatus.textContent = "Speech recognition engine un-supported.";
+        return;
     }
-    
+
+    if (!isMicOn) {
+        try {
+            recognition.start();
+        } catch(err) {
+            console.log(err);
+        }
+    } else {
+        isMicOn = false;
+        recognition.stop();
+        micToggleBtn.textContent = "🔴 Click to Turn Mic ON";
+        micToggleBtn.classList.remove('active');
+        elVoiceStatus.textContent = "Microphone is offline";
+    }
+});
+
+elEmojiDisplay.addEventListener('click', () => {
+    if (processingLock) return;
+    if (!isRevealed) {
+        isRevealed = true;
+        updateCard();
+    } else {
+        isRevealed = false;
+        currentIndex = (currentIndex + 1) % foods.length;
+        updateCard();
+    }
+});
+
+updateCard();
+</script>
+
+</body>
+</html>
