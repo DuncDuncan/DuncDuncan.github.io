@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chinese Food Flashcards - Native Voice</title>
+<title>Chinese Food Flashcards with Voice Input</title>
 
 <style>
 body {
@@ -90,7 +90,7 @@ body {
 }
 
 .debug-text {
-    color: #ffd700; /* Changed to gold to represent captured characters */
+    color: #ffd700;
     font-weight: bold;
 }
 
@@ -121,50 +121,40 @@ body {
 </div>
 
 <div class="instructions">
-    Turn mic ON • Say the Chinese word aloud • Or click emoji to reveal/skip
+    Turn mic ON • Say your answer aloud • Or click emoji to reveal/skip
 </div>
 
 <script>
-// The array is cleaned up. We match directly against character variations or sounds.
 const foods = [
-    { english: "Dog", emoji: "🐶", chinese: "狗", pinyin: "gǒu", phonetic: "goh", matches: ["狗", "够", "走"] },
-    { english: "Cat", emoji: "🐱", chinese: "猫", pinyin: "māo", phonetic: "maow", matches: ["猫", "毛", "么"] },
-    { english: "Chili", emoji: "🌶️", chinese: "辣椒", pinyin: "là jiāo", phonetic: "lah jyaow", matches: ["辣椒", "拉焦", "辣酱"] },
-    { english: "Shrimp", emoji: "🍤", chinese: "虾", pinyin: "xiā", phonetic: "shyah", matches: ["虾", "瞎", "下"] },
-    { english: "Water", emoji: "💧", chinese: "水", pinyin: "shuǐ", phonetic: "shway", matches: ["水", "谁", "睡"] },
-    { english: "Rice", emoji: "🍚", chinese: "米饭", pinyin: "mǐ fàn", phonetic: "mee fan", matches: ["米饭", "米方", "秘方"] },
-    { english: "Noodles", emoji: "🍜", chinese: "面条", pinyin: "miàn tiáo", phonetic: "mee-en tyaow", matches: ["面条", "面条儿", "面包"] },
-    { english: "Apple", emoji: "🍎", chinese: "苹果", pinyin: "píng guǒ", phonetic: "peeng gwor", matches: ["苹果", "凭过", "平果"] },
-    { english: "Pork", emoji: "🐷", chinese: "猪肉", pinyin: "zhū ròu", phonetic: "joo roh", matches: ["猪肉", "牛肉", "主肉"] },
-    { english: "Chicken", emoji: "🍗", chinese: "鸡肉", pinyin: "jī ròu", phonetic: "jee roh", matches: ["鸡肉", "肌肉", "急肉"] },
-    { english: "Beef", emoji: "🥩", chinese: "牛肉", pinyin: "niú ròu", phonetic: "nyoh roh", matches: ["牛肉", "流肉", "纽肉"] },
-    { english: "Fish", emoji: "🐟", chinese: "鱼", pinyin: "yú", phonetic: "yoo", matches: ["鱼", "于", "雨"] },
-    { english: "Egg", emoji: "🥚", chinese: "鸡蛋", pinyin: "jī dàn", phonetic: "jee dan", matches: ["鸡蛋", "机蛋", "吉林"] },
-    { english: "Bread", emoji: "🍞", chinese: "面包", pinyin: "miàn bāo", phonetic: "mee-en baow", matches: ["面包", "面包含", "面部"] },
-    { english: "Banana", emoji: "🍌", chinese: "香蕉", pinyin: "xiāng jiāo", phonetic: "shyang jyaow", matches: ["香蕉", "相交", "向阳"] },
-    { english: "Dumplings", emoji: "🥟", chinese: "饺子", pinyin: "jiǎo zi", phonetic: "jyaow dzuh" , matches: ["饺子", "角子", "轿子"] },
-    { english: "Fried Rice", emoji: "🥡", chinese: "炒饭", pinyin: "chǎo fàn", phonetic: "chaow fan", matches: ["炒饭", "少妇", "超凡"] },
-    { english: "Soup", emoji: "🥣", chinese: "汤", pinyin: "tāng", phonetic: "tahng", matches: ["汤", "糖", "躺"] },
-    { english: "Vegetables", emoji: "🥬", chinese: "蔬菜", pinyin: "shū cài", phonetic: "shoo tsai", matches: ["蔬菜", "数菜", "舒适"] },
-    { english: "Pork Bun", emoji: "🥮", chinese: "包子", pinyin: "bāo zi", phonetic: "baow dzuh", matches: ["包子", "报纸", "豹子"] },
-    { english: "Duck", emoji: "🦆", chinese: "鸭肉", pinyin: "yā ròu", phonetic: "yah roh", matches: ["鸭肉", "压肉", "呀"] },
-    { english: "Hotpot", emoji: "🍲", chinese: "火锅", pinyin: "huǒ guō", phonetic: "hwor gwor", matches: ["火锅", "获过", "活络"] },
-    { english: "Tofu", emoji: "🍢", chinese: "豆腐", pinyin: "dòu fu", phonetic: "doh foo", matches: ["豆腐", "兜风", "都富"] },
-    { english: "Tea", emoji: "🍵", chinese: "茶", pinyin: "chá", phonetic: "chah", matches: ["茶", "查", "插"] },
-    { english: "Milk", emoji: "🥛", chinese: "牛奶", pinyin: "niú nǎi", phonetic: "nyoh nai", matches: ["牛奶", "流奶", "牛耐"] },
-    { english: "Coffee", emoji: "☕", chinese: "咖啡", pinyin: "kā fēi", phonetic: "kah fay", matches: ["咖啡", "咖妃", "卡非"] },
-    { english: "Juice", emoji: "🧃", chinese: "果汁", pinyin: "guǒ zhī", phonetic: "gwor jir", matches: ["果汁", "国志", "过肢"] },
-    { english: "Beer", emoji: "🍺", chinese: "啤酒", pinyin: "pí jiǔ", phonetic: "pee jyoh", matches: ["啤酒", "皮旧", "脾酒"] }
+    { english: "Dog", emoji: "🐶", chinese: "狗", pinyin: "gǒu", phonetic: "goh", matches: ["狗", "够", "走", "勾"] },
+    { english: "Cat", emoji: "🐱", chinese: "猫", pinyin: "māo", phonetic: "maow", matches: ["猫", "毛", "么", "茂"] },
+    { english: "Chili", emoji: "🌶️", chinese: "辣椒", pinyin: "là jiāo", phonetic: "lah jyaow", matches: ["辣椒", "拉焦", "辣酱", "拉脚"] },
+    { english: "Shrimp", emoji: "🍤", chinese: "虾", pinyin: "xiā", phonetic: "shyah", matches: ["虾", "瞎", "下", "呷"] },
+    { english: "Water", emoji: "💧", chinese: "水", pinyin: "shuǐ", phonetic: "shway", matches: ["水", "谁", "睡", "税"] },
+    { english: "Rice", emoji: "🍚", chinese: "米饭", pinyin: "mǐ fàn", phonetic: "mee fan", matches: ["米饭", "米方", "秘方", "迷惘"] },
+    { english: "Noodles", emoji: "🍜", chinese: "面条", pinyin: "miàn tiáo", phonetic: "mee-en tyaow", matches: ["面条", "面条儿", "面包", "免调"] },
+    { english: "Apple", emoji: "🍎", chinese: "苹果", pinyin: "píng guǒ", phonetic: "peeng gwor", matches: ["苹果", "凭过", "平果", "评过"] },
+    { english: "Pork", emoji: "🐷", chinese: "猪肉", pinyin: "zhū ròu", phonetic: "joo roh", matches: ["猪肉", "牛肉", "主肉", "祝融"] },
+    { english: "Chicken", emoji: "🍗", chinese: "鸡肉", pinyin: "jī ròu", phonetic: "jee roh", matches: ["鸡肉", "肌肉", "急肉", "吉柔"] },
+    { english: "Beef", emoji: "🥩", chinese: "牛肉", pinyin: "niú ròu", phonetic: "nyoh roh", matches: ["牛肉", "流肉", "纽肉", "牛油"] },
+    { english: "Fish", emoji: "🐟", chinese: "鱼", pinyin: "yú", phonetic: "yoo", matches: ["鱼", "于", "雨", "玉"] },
+    { english: "Egg", emoji: "🥚", chinese: "鸡蛋", pinyin: "jī dàn", phonetic: "jee dan", matches: ["鸡蛋", "机蛋", "吉林", "积攒"] },
+    { english: "Bread", emoji: "🍞", chinese: "面包", pinyin: "miàn bāo", phonetic: "mee-en baow", matches: ["面包", "面包含", "面部", "勉包"] },
+    { english: "Banana", emoji: "🍌", chinese: "香蕉", pinyin: "xiāng jiāo", phonetic: "shyang jyaow", matches: ["香蕉", "相交", "向阳", "橡皮"] },
+    { english: "Dumplings", emoji: "🥟", chinese: "饺子", pinyin: "jiǎo zi", phonetic: "jyaow dzuh" , matches: ["饺子", "角子", "轿子", "交子"] },
+    { english: "Fried Rice", emoji: "🥡", chinese: "炒饭", pinyin: "chǎo fàn", phonetic: "chaow fan", matches: ["炒饭", "少妇", "超凡", "抄方"] },
+    { english: "Soup", emoji: "🥣", chinese: "汤", pinyin: "tāng", phonetic: "tahng", matches: ["汤", "糖", "躺", "趟"] },
+    { english: "Vegetables", emoji: "🥬", chinese: "蔬菜", pinyin: "shū cài", phonetic: "shoo tsai", matches: ["蔬菜", "数菜", "舒适", "书才"] },
+    { english: "Pork Bun", emoji: "🥮", chinese: "包子", pinyin: "bāo zi", phonetic: "baow dzuh", matches: ["包子", "报纸", "豹子", "暴躁"] },
+    { english: "Duck", emoji: "🦆", chinese: "鸭肉", pinyin: "yā ròu", phonetic: "yah roh", matches: ["鸭肉", "压肉", "呀", "亚茹"] },
+    { english: "Hotpot", emoji: "🍲", chinese: "火锅", pinyin: "huǒ guō", phonetic: "hwor gwor", matches: ["火锅", "获过", "活络", "伙国"] },
+    { english: "Tofu", emoji: "🍢", chinese: "豆腐", pinyin: "dòu fu", phonetic: "doh foo", matches: ["豆腐", "兜风", "都富", "斗殴"] },
+    { english: "Tea", emoji: "🍵", chinese: "茶", pinyin: "chá", phonetic: "chah", matches: ["茶", "查", "插", "察"] },
+    { english: "Milk", emoji: "🥛", chinese: "牛奶", pinyin: "niú nǎi", phonetic: "nyoh nai", matches: ["牛奶", "流奶", "牛耐", "纽奶"] },
+    { english: "Coffee", emoji: "☕", chinese: "咖啡", pinyin: "kā fēi", phonetic: "kah fay", matches: ["咖啡", "咖妃", "卡非", "咖喱"] },
+    { english: "Juice", emoji: "🧃", chinese: "果汁", pinyin: "guǒ zhī", phonetic: "gwor jir", matches: ["果汁", "国志", "过肢", "裹织"] },
+    { english: "Beer", emoji: "🍺", chinese: "啤酒", pinyin: "pí jiǔ", phonetic: "pee jyoh", matches: ["啤酒", "皮旧", "脾酒", "批改"] }
 ];
-
-// Fisher-Yates Shuffle Algorithm to keep cards fresh and randomized
-function shuffleDeck(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-}
-shuffleDeck(foods);
 
 let currentIndex = 0;
 let isRevealed = false;
@@ -200,14 +190,14 @@ if (SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    // --- THIS IS THE KEY CHANGE: Engine is now set to Mandarin Chinese ---
+    // Core setting updated safely to native Chinese
     recognition.lang = 'zh-CN'; 
 
     recognition.onstart = () => {
         isMicOn = true;
-        micToggleBtn.textContent = "🟢 Mic is LIVE (Listening Chinese)";
+        micToggleBtn.textContent = "🟢 Mic is LIVE (Listening)";
         micToggleBtn.classList.add('active');
-        elVoiceStatus.textContent = "Speak the Chinese word now...";
+        elVoiceStatus.textContent = "Say your answer aloud...";
     };
 
     recognition.onresult = (event) => {
@@ -227,12 +217,12 @@ if (SpeechRecognition) {
 
         const currentFood = foods[currentIndex];
         
-        // Match directly against the target character or close homophones!
+        // Matches directly against actual text characters or common homophones
         const hasMatch = liveText.includes(currentFood.chinese) || currentFood.matches.some(pattern => liveText.includes(pattern));
 
         if (hasMatch) {
             processingLock = true;
-            elVoiceStatus.textContent = "Excellent! 正确! 🎉";
+            elVoiceStatus.textContent = "Correct Match detected! 🎉";
             elDebugText.style.color = "#00ff00";
             
             if (!isRevealed) {
@@ -251,6 +241,9 @@ if (SpeechRecognition) {
 
     recognition.onerror = (e) => {
         console.log("Mic Error: ", e.error);
+        if(e.error === 'not-allowed') {
+            elVoiceStatus.textContent = "Permission denied. Check address bar icon!";
+        }
     };
 
     recognition.onend = () => {
@@ -270,3 +263,11 @@ function updateCard() {
     } else {
         elChinese.textContent = "";
         elPinyin.textContent = "";
+        elPhonetic.textContent = "";
+        elDebugText.textContent = "...";
+    }
+}
+
+micToggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!recognition) {
