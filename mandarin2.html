@@ -156,6 +156,17 @@ const foods = [
     { english: "Beer", emoji: "🍺", chinese: "啤酒", pinyin: "pí jiǔ", phonetic: "pee jyoh", matches: ["pee jyoh", "pi jiu", "pee jo", "pijo", "pee chill", "beer"] }
 ];
 
+// Re-injected Perfect Shuffling Block
+function shuffleDeck(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+// Execute shuffle immediately upon app boot sequence
+shuffleDeck(foods);
+
 let currentIndex = 0;
 let isRevealed = false;
 let isMicOn = false;
@@ -203,7 +214,6 @@ if (SpeechRecognition) {
         if (processingLock) return;
 
         let liveText = '';
-        // Bulletproof result string compilation loop
         for (let i = event.resultIndex; i < event.results.length; ++i) {
             if (event.results[i] && event.results[i][0]) {
                 liveText += event.results[i][0].transcript;
@@ -226,82 +236,3 @@ if (SpeechRecognition) {
             if (!isRevealed) {
                 isRevealed = true;
                 updateCard();
-                setTimeout(() => {
-                    isRevealed = false;
-                    currentIndex = (currentIndex + 1) % foods.length;
-                    processingLock = false;
-                    elDebugText.style.color = "#ffaa00";
-                    updateCard();
-                }, 2000);
-            }
-        }
-    };
-
-    recognition.onerror = (e) => {
-        console.log("Mic Error: ", e.error);
-        if(e.error === 'not-allowed') {
-            elVoiceStatus.textContent = "Permission denied. Check address bar icon!";
-        }
-    };
-
-    recognition.onend = () => {
-        if (isMicOn) { try { recognition.start(); } catch(err){} }
-    };
-}
-
-function updateCard() {
-    const currentFood = foods[currentIndex];
-    elEmojiDisplay.innerHTML = `<span>${currentFood.emoji}</span>`;
-    
-    if (isRevealed) {
-        elChinese.textContent = currentFood.chinese;
-        elPinyin.textContent = currentFood.pinyin;
-        elPhonetic.textContent = currentFood.phonetic;
-        speakChinese(currentFood.chinese);
-    } else {
-        elChinese.textContent = "";
-        elPinyin.textContent = "";
-        elPhonetic.textContent = "";
-        elDebugText.textContent = "...";
-    }
-}
-
-micToggleBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (!recognition) {
-        elVoiceStatus.textContent = "Speech recognition engine unsupported.";
-        return;
-    }
-
-    if (!isMicOn) {
-        try {
-            recognition.start();
-        } catch(err) {
-            console.log(err);
-        }
-    } else {
-        isMicOn = false;
-        recognition.stop();
-        micToggleBtn.textContent = "🔴 Click to Turn Mic ON";
-        micToggleBtn.classList.remove('active');
-        elVoiceStatus.textContent = "Microphone is offline";
-    }
-});
-
-elEmojiDisplay.addEventListener('click', () => {
-    if (processingLock) return;
-    if (!isRevealed) {
-        isRevealed = true;
-        updateCard();
-    } else {
-        isRevealed = false;
-        currentIndex = (currentIndex + 1) % foods.length;
-        updateCard();
-    }
-});
-
-updateCard();
-</script>
-
-</body>
-</html>
