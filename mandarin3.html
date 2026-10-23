@@ -184,7 +184,7 @@ function speakChinese(text) {
 }
 
 // Helper function to calculate single character mistakes (Levenshtein Distance)
-function isCloseEnough(wordA, wordB, maxMistakes = 2) {
+function isCloseEnough(wordA, wordB, maxMistakes = 5) {
     const a = wordA.toLowerCase().trim();
     const b = wordB.toLowerCase().trim();
 
