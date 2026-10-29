@@ -65,6 +65,7 @@
             background-color: var(--provisions-bg, #0b1c11);
             position: relative;
             z-index: 2; /* Ensures content cleanly scrolls over the fixed background */
+            overflow-x: clip;
         }
 
         #narrative-section {
@@ -75,6 +76,7 @@
         #price-section {
             background-color: var(--price-bg, #0d2416);
             border: 2px solid var(--price-border, #e69d45);
+            scroll-margin-top: 80px;
         }
 
         #concierge-section {
@@ -206,10 +208,19 @@
             display: flex;
             flex-direction: column;
             border: 1px solid var(--card-border, #1b3d26);
+            border-radius: 8px;
+            overflow: hidden;
+            color: inherit;
+            text-decoration: none;
+            cursor: pointer;
         }
         .product-card:hover {
             transform: translateY(-5px);
             border-color: var(--provisions-accent, #c46210);
+        }
+        .product-card:focus-visible {
+            outline: 3px solid var(--provisions-accent, #c46210);
+            outline-offset: 3px;
         }
         .product-image {
             height: 250px;
@@ -258,22 +269,40 @@
 
         /* PARALLAX SEPARATOR CONFIGURATION */
         .image-separator {
-            width: 100%;
+            width: 100vw;
             height: 400px; /* Slightly taller for depth clarity */
             background-image: url('https://images.unsplash.com/photo-1520114878144-6123749968dd?auto=format&fit=crop&w=1200&q=80');
             background-size: cover;
             background-position: center;
             background-attachment: fixed; /* Creates a secondary parallax window */
             margin: 60px 0;
+            margin-left: calc(50% - 50vw);
             border: 1px solid var(--card-border, #1b3d26);
         }
 
         .narrative-section {
             padding: 60px;
+            background-image: url('https://images.pexels.com/photos/40591616/pexels-photo-40591616.png?auto=compress&cs=tinysrgb&w=1200');
+            background-position: center;
+            background-size: cover;
             margin: 40px 0 80px 0;
             scroll-margin-top: 32px;
             text-align: center;
             border-radius: 8px;
+            overflow: hidden;
+            isolation: isolate;
+            position: relative;
+        }
+        #narrative-section::before {
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            border-radius: inherit;
+            background-color: var(--narrative-bg, #3b1f24);
+            content: "";
+            opacity: 0.92;
+            pointer-events: none;
+            transition: background-color 2s ease;
         }
         .narrative-content h2 {
             color: var(--narrative-title, #c27a4a);
@@ -294,6 +323,7 @@
         .price-section {
             padding: 40px;
             margin-bottom: 60px;
+            border-radius: 8px;
             text-align: center;
         }
         .price-title {
@@ -387,7 +417,19 @@
             .price-box:last-child { border-bottom: none; }
             .hero h1 { font-size: 2.8rem; }
             .nav-container { flex-direction: column; gap: 20px; padding: 0 20px; }
-            nav a { margin: 0 12px; }
+            nav {
+                display: flex;
+                width: 100%;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 10px 16px;
+            }
+            nav a {
+                margin: 0;
+                white-space: nowrap;
+                font-size: 0.75rem;
+                letter-spacing: 1px;
+            }
             /* Disable fixed background attachment on mobile devices to save performance and prevent rendering bugs */
             .hero, .image-separator { background-attachment: scroll; }
         }
@@ -419,7 +461,7 @@
         <div class="container">
             <h2 class="section-title">The Fine Provisions</h2>
             <div class="products-grid">
-                <div class="product-card">
+                <a class="product-card" href="#price-section" aria-label="See prices for Locally Sourced Beech Firewood">
                     <div class="product-image firewood-img"></div>
                     <div class="product-info">
                         <h3>Locally Sourced Beech Firewood</h3>
@@ -431,9 +473,9 @@
                             <li>Available loose or in convenient dumpy bags with free local delivery</li>
                         </ul>
                     </div>
-                </div>
+                </a>
 
-                <div class="product-card">
+                <a class="product-card" href="#concierge-section" aria-label="Enquire about Heritage Breed Pork">
                     <div class="product-image pork-img"></div>
                     <div class="product-info">
                         <h3>Heritage Breed Pork</h3>
@@ -445,9 +487,9 @@
                             <li>Freshly frozen choices prepared directly for your collection</li>
                         </ul>
                     </div>
-                </div>
+                </a>
 
-                <div class="product-card">
+                <a class="product-card" href="#concierge-section" aria-label="Enquire about Beech Charcoal">
                     <div class="product-image charcoal-img"></div>
                     <div class="product-info">
                         <h3>Beech Charcoal</h3>
@@ -459,7 +501,7 @@
                             <li>Available for collection directly from the farm estate</li>
                         </ul>
                     </div>
-                </div>
+                </a>
             </div>
 
             <div class="image-separator"></div>
