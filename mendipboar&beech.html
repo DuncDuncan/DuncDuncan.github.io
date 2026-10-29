@@ -391,10 +391,18 @@
             max-width: 500px;
         }
         .details-list li {
+            display: grid;
+            grid-template-columns: 140px minmax(0, 1fr);
+            column-gap: 12px;
+            align-items: baseline;
             list-style: none;
             font-size: 1.1rem;
             margin-bottom: 15px;
             color: var(--concierge-text, #f0f4f1);
+        }
+        .details-list li > span {
+            min-width: 0;
+            overflow-wrap: anywhere;
         }
         .details-list strong {
             font-weight: 500;
@@ -402,8 +410,6 @@
             text-transform: uppercase;
             font-size: 0.8rem;
             letter-spacing: 1.5px;
-            display: inline-block;
-            width: 140px;
         }
         .details-list a {
             color: var(--concierge-title, #e69d45);
@@ -415,6 +421,7 @@
             .products-grid, .contact-grid, .price-grid { flex-direction: column; gap: 40px; }
             .price-box { border-left: none; border-bottom: 1px solid var(--price-inner-border, #1b3d26); padding-bottom: 20px; }
             .price-box:last-child { border-bottom: none; }
+            .details-list li { grid-template-columns: 112px minmax(0, 1fr); }
             .hero h1 { font-size: 2.8rem; }
             .nav-container { flex-direction: column; gap: 20px; padding: 0 20px; }
             nav {
@@ -543,9 +550,9 @@
                         <h3>Private Orders & Enquiries</h3>
                         <p>To ensure personal attention and keep pace with seasonal availability, we arrange all farm deliveries and private collections directly via telephone or email correspondence.</p>
                         <ul class="details-list">
-                            <li><strong>The Estate:</strong> Eastern Edge of the Mendips, Somerset</li>
-                            <li><strong>Telephone:</strong> 01234 567890</li>
-                            <li><strong>Email:</strong> <a href="#">orders@mendipbeechandboar.co.uk</a></li>
+                            <li><strong>The Estate:</strong><span>Eastern Edge of the Mendips, Somerset</span></li>
+                            <li><strong>Telephone:</strong><span>01234 567890</span></li>
+                            <li><strong>Email:</strong><span><a href="#">orders@mendipbeechandboar.co.uk</a></span></li>
                         </ul>
                     </div>
                 </div>
