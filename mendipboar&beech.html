@@ -418,11 +418,30 @@
         .details-list a.phone-link {
             display: inline-block;
             color: inherit;
-            transition: font-size 160ms ease;
+            transform-origin: left center;
+            animation: phone-pulse 5.6s ease-in-out infinite;
+            animation-delay: 5s;
         }
-        .phone-link:hover,
-        .phone-link:focus-visible {
-            font-size: 30px;
+        @keyframes phone-pulse {
+            0%, 4%, 8%, 100% { transform: scale(1); }
+            2%, 6% { transform: scale(1.5); }
+        }
+        .phone-link-hover {
+            display: inline-block;
+            transform-origin: left center;
+            transition: transform 160ms ease;
+        }
+        .phone-link-hover:hover,
+        .phone-link-hover:focus-within {
+            transform: scale(1.5);
+        }
+        .phone-link-hover:hover .phone-link,
+        .phone-link-hover:focus-within .phone-link {
+            animation: none;
+            transform: none;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .details-list a.phone-link { animation: none; }
         }
 
         @media (max-width: 900px) {
@@ -559,9 +578,9 @@
                         <h3>Private Orders & Enquiries</h3>
                         <p>To ensure personal attention and keep pace with seasonal availability, we arrange all farm deliveries and private collections directly via telephone or email correspondence.</p>
                         <ul class="details-list">
-                            <li><strong>The Estate:</strong><span>Eastern Edge of the Mendips, Somerset</span></li>
-                            <li><strong>Telephone:</strong><span><a class="phone-link" href="tel:+441234567890">01234 567890</a></span></li>
-                            <li><strong>Email:</strong><span><a href="#">orders@mendipbeechandboar.co.uk</a></span></li>
+                            <li><strong>The Estate:</strong><span><a href="https://www.google.com/maps/@?api=1&amp;map_action=map&amp;center=51.2755,-2.5770&amp;zoom=11" target="_blank" rel="noopener noreferrer">Eastern Edge of the Mendips, Somerset</a></span></li>
+                            <li><strong>Telephone:</strong><span><span class="phone-link-hover"><a class="phone-link" href="tel:+441234567890">01234 567890</a></span></span></li>
+                            <li><strong>Email:</strong><span><a href="mailto:orders@mendipbeechandboar.co.uk">orders@mendipbeechandboar.co.uk</a></span></li>
                         </ul>
                     </div>
                 </div>
