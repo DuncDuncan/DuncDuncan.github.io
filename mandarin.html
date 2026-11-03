@@ -33,10 +33,36 @@ body {
     padding: clamp(8px, 2.5vh, 30px) 18px;
 }
 
+.practice-stats {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 1;
+    display: grid;
+    gap: 5px;
+    width: 92px;
+    color: #aaa;
+    font-size: 0.75rem;
+    text-align: left;
+    pointer-events: none;
+}
+
+.practice-stats div {
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+}
+
+.practice-stats strong {
+    color: #ffd700;
+    font-variant-numeric: tabular-nums;
+}
+
 .emoji-zone {
     flex: 1 1 auto;
     min-height: 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
 }
@@ -44,8 +70,30 @@ body {
 /* Made the emoji large and consistent in both states */
 .emoji-display {
     flex: 0 0 auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
     font-size: 10rem;
     line-height: 1;
+}
+
+.emoji-display:focus-visible {
+    outline: 2px solid #ffd700;
+    outline-offset: 4px;
+}
+
+.english-label {
+    min-height: 1.4em;
+    margin-top: 4px;
+    color: #aaa;
+    font-size: 1rem;
+    visibility: hidden;
+}
+
+.english-label.is-visible {
+    visibility: visible;
 }
 
 .chinese {
@@ -226,9 +274,15 @@ a {
 </head>
 <body>
 
+<aside class="practice-stats" aria-label="Current food practice statistics">
+    <div><span>Recent misses</span><strong id="missCount">0</strong></div>
+    <div><span>Avg time</span><strong id="averageTime">-</strong></div>
+</aside>
+
 <div class="card">
     <div class="emoji-zone">
-        <div id="emojiDisplay" class="emoji-display"></div>
+        <button id="emojiDisplay" class="emoji-display" type="button" aria-label="Reveal the English word" aria-expanded="false"></button>
+        <div id="englishLabel" class="english-label" aria-live="polite"></div>
     </div>
     <div id="choices" class="choices" aria-label="Choose the matching Chinese vocabulary"></div>
     <div id="status" class="status" role="status" aria-live="polite"></div>
@@ -263,12 +317,29 @@ const foods = [
     { english: "Dog", emoji: "🐶", chinese: "狗", pinyin: "gǒu", phonetic: "goh" },
     { english: "Cat", emoji: "🐱", chinese: "猫", pinyin: "māo", phonetic: "maow" },
     { english: "Chili", emoji: "🌶️", chinese: "辣椒", pinyin: "là jiāo", phonetic: "lah jyaow" }, // New addition
-    { english: "Shrimp", emoji: "🍤", chinese: "虾", pinyin: "xiā", phonetic: "shyah" }          // New addition
+    { english: "Shrimp", emoji: "🍤", chinese: "虾", pinyin: "xiā", phonetic: "shyah" },
+    { english: "Orange", emoji: "🍊", chinese: "橙子", pinyin: "chéng zi", phonetic: "chuhng dzuh" },
+    { english: "Grapes", emoji: "🍇", chinese: "葡萄", pinyin: "pú táo", phonetic: "poo taow" },
+    { english: "Strawberry", emoji: "🍓", chinese: "草莓", pinyin: "cǎo méi", phonetic: "tsaow may" },
+    { english: "Watermelon", emoji: "🍉", chinese: "西瓜", pinyin: "xī guā", phonetic: "shee gwah" },
+    { english: "Pineapple", emoji: "🍍", chinese: "菠萝", pinyin: "bō luó", phonetic: "baw law" },
+    { english: "Peach", emoji: "🍑", chinese: "桃子", pinyin: "táo zi", phonetic: "taow dzuh" },
+    { english: "Potato", emoji: "🥔", chinese: "土豆", pinyin: "tǔ dòu", phonetic: "too doh" },
+    { english: "Corn", emoji: "🌽", chinese: "玉米", pinyin: "yù mǐ", phonetic: "yoo mee" },
+    { english: "Carrot", emoji: "🥕", chinese: "胡萝卜", pinyin: "hú luó bo", phonetic: "hoo lwaw bwoh" },
+    { english: "Cucumber", emoji: "🥒", chinese: "黄瓜", pinyin: "huáng guā", phonetic: "hwahng gwah" },
+    { english: "Mushroom", emoji: "🍄", chinese: "蘑菇", pinyin: "mó gu", phonetic: "mwaw goo" },
+    { english: "Onion", emoji: "🧅", chinese: "洋葱", pinyin: "yáng cōng", phonetic: "yahng tsong" },
+    { english: "Garlic", emoji: "🧄", chinese: "大蒜", pinyin: "dà suàn", phonetic: "dah swan" },
+    { english: "Cake", emoji: "🍰", chinese: "蛋糕", pinyin: "dàn gāo", phonetic: "dan gaow" },
+    { english: "Cheese", emoji: "🧀", chinese: "奶酪", pinyin: "nǎi lào", phonetic: "nai laow" },
+    { english: "Lemon", emoji: "🍋", chinese: "柠檬", pinyin: "níng méng", phonetic: "neeng mung" }
 ];
 
-const failureStorageKey = 'mandarin-food-failures';
+const missHistoryStorageKey = 'mandarin-food-miss-history';
 const answerTimeStorageKey = 'mandarin-food-answer-times';
 const maxTrackedAnswerTimeMs = 60000;
+const newFoodSeedWeights = [16, 8, 4];
 
 function shuffleDeck(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -277,41 +348,68 @@ function shuffleDeck(array) {
     }
 }
 
-function loadFailureCounts() {
+function loadMissHistory() {
     try {
-        const savedCounts = JSON.parse(localStorage.getItem(failureStorageKey) || '{}');
-        return Object.fromEntries(foods.map(food => {
-            const count = savedCounts[food.english];
-            return [food.english, Number.isSafeInteger(count) && count > 0 ? count : 0];
-        }));
+        const savedHistory = JSON.parse(localStorage.getItem(missHistoryStorageKey) || '{}');
+        return Object.fromEntries(foods.map(food => [
+            food.english,
+            Array.isArray(savedHistory[food.english])
+                ? savedHistory[food.english].filter(misses => Number.isSafeInteger(misses) && misses >= 0).slice(-10)
+                : []
+        ]));
     } catch {
-        return Object.fromEntries(foods.map(food => [food.english, 0]));
+        return Object.fromEntries(foods.map(food => [food.english, []]));
     }
 }
 
-const failureCounts = loadFailureCounts();
+const recentMissHistory = loadMissHistory();
 
 function loadAnswerTimes() {
     try {
         const savedTimes = JSON.parse(localStorage.getItem(answerTimeStorageKey) || '{}');
         return Object.fromEntries(foods.map(food => {
             const record = savedTimes[food.english];
-            if (!record || !Number.isFinite(record.averageMs) || !Number.isSafeInteger(record.samples) || record.averageMs < 0 || record.samples < 1) {
-                return [food.english, { averageMs: 0, samples: 0 }];
+            if (!record) {
+                return [food.english, { durations: [], averageMs: 0, samples: 0 }];
             }
-            return [food.english, { averageMs: record.averageMs, samples: record.samples }];
+
+            const durations = Array.isArray(record.durations)
+                ? record.durations
+                    .filter(duration => Number.isFinite(duration) && duration >= 0)
+                    .slice(-10)
+                    .map(duration => Math.min(duration, maxTrackedAnswerTimeMs))
+                : Number.isFinite(record.averageMs) && record.averageMs >= 0
+                    ? [Math.min(record.averageMs, maxTrackedAnswerTimeMs)]
+                    : [];
+            const averageMs = durations.length
+                ? durations.reduce((total, duration) => total + duration, 0) / durations.length
+                : 0;
+            return [food.english, { durations, averageMs, samples: durations.length }];
         }));
     } catch {
-        return Object.fromEntries(foods.map(food => [food.english, { averageMs: 0, samples: 0 }]));
+        return Object.fromEntries(foods.map(food => [food.english, { durations: [], averageMs: 0, samples: 0 }]));
     }
 }
 
 const answerTimes = loadAnswerTimes();
 
-function saveFailureCounts() {
+function getRecentMissCount(food) {
+    return recentMissHistory[food.english].reduce((total, misses) => total + misses, 0);
+}
+
+function saveMissHistory() {
     try {
-        localStorage.setItem(failureStorageKey, JSON.stringify(failureCounts));
+        localStorage.setItem(missHistoryStorageKey, JSON.stringify(recentMissHistory));
     } catch {}
+}
+
+function recordAppearanceMisses(food, misses) {
+    const history = recentMissHistory[food.english];
+    history.push(misses);
+    if (history.length > 10) {
+        history.shift();
+    }
+    saveMissHistory();
 }
 
 function saveAnswerTimes() {
@@ -323,38 +421,76 @@ function saveAnswerTimes() {
 function recordAnswerTime(food, elapsedMs) {
     const record = answerTimes[food.english];
     const duration = Math.min(elapsedMs, maxTrackedAnswerTimeMs);
-    record.averageMs += (duration - record.averageMs) / (record.samples + 1);
-    record.samples += 1;
+    record.durations.push(duration);
+    if (record.durations.length > 10) {
+        record.durations.shift();
+    }
+    record.samples = record.durations.length;
+    record.averageMs = record.durations.reduce((total, sample) => total + sample, 0) / record.samples;
     saveAnswerTimes();
 }
 
-function getFoodWeight(food) {
-    const averageMs = Math.min(answerTimes[food.english].averageMs, maxTrackedAnswerTimeMs);
+function getFoodWeightDetails(food) {
+    const misses = getRecentMissCount(food);
+    const answerTime = answerTimes[food.english];
+    const averageMs = Math.min(answerTime.averageMs, maxTrackedAnswerTimeMs);
+    const appearances = Math.max(recentMissHistory[food.english].length, answerTime.samples);
+    const missFactor = 1 + misses;
     const timeFactor = 1 + averageMs / 5000;
-    return (1 + failureCounts[food.english]) * timeFactor;
+    const seedFactor = newFoodSeedWeights[appearances] ?? 1;
+    return {
+        misses,
+        recentAnswerTimesSeconds: answerTime.durations.map(duration => Number((duration / 1000).toFixed(2))),
+        averageAnswerTimeSeconds: Number((averageMs / 1000).toFixed(2)),
+        missFactor,
+        timeFactor: Number(timeFactor.toFixed(3)),
+        seedFactor,
+        weight: missFactor * timeFactor * seedFactor
+    };
+}
+
+function logFoodSelection(selection, totalWeight) {
+    const selectionChancePercent = (selection.weight / totalWeight * 100).toFixed(2);
+    console.log(`selectionChancePercent=${selectionChancePercent}%, misses=${selection.misses}, recentAnswerTimesSeconds=[${selection.recentAnswerTimesSeconds.join(', ')}]`);
 }
 
 function chooseNextFood(previousFood) {
     const candidates = foods.filter(food => food !== previousFood);
-    const totalWeight = candidates.reduce((total, food) => total + getFoodWeight(food), 0);
+    const weightedCandidates = candidates.map(food => ({ food, ...getFoodWeightDetails(food) }));
+    const totalWeight = weightedCandidates.reduce((total, selection) => total + selection.weight, 0);
     let randomWeight = Math.random() * totalWeight;
 
-    for (const food of candidates) {
-        randomWeight -= getFoodWeight(food);
+    for (const selection of weightedCandidates) {
+        randomWeight -= selection.weight;
         if (randomWeight < 0) {
-            return food;
+            logFoodSelection(selection, totalWeight);
+            return selection.food;
         }
     }
 
-    return candidates[candidates.length - 1];
+    const selection = weightedCandidates[weightedCandidates.length - 1];
+    logFoodSelection(selection, totalWeight);
+    return selection.food;
 }
 
 let currentFood = chooseNextFood();
 let questionStartedAt = 0;
+let currentRoundMisses = 0;
 
 const elEmojiDisplay = document.getElementById('emojiDisplay');
+const elEnglishLabel = document.getElementById('englishLabel');
 const elChoices = document.getElementById('choices');
 const elStatus = document.getElementById('status');
+const elMissCount = document.getElementById('missCount');
+const elAverageTime = document.getElementById('averageTime');
+
+function updatePracticeStats(food) {
+    const answerTime = answerTimes[food.english];
+    elMissCount.textContent = getRecentMissCount(food) + (food === currentFood ? currentRoundMisses : 0);
+    elAverageTime.textContent = answerTime.samples > 0
+        ? `${(answerTime.averageMs / 1000).toFixed(1)}s`
+        : '-';
+}
 
 // Find a matching voice from the system engine
 function getChineseVoice() {
@@ -406,7 +542,12 @@ function speakChinese(text, onEnd) {
 function updateCard() {
     const questionFood = currentFood;
     questionStartedAt = performance.now();
+    currentRoundMisses = 0;
+    updatePracticeStats(questionFood);
     elEmojiDisplay.textContent = questionFood.emoji;
+    elEmojiDisplay.setAttribute('aria-expanded', 'false');
+    elEnglishLabel.textContent = questionFood.english;
+    elEnglishLabel.classList.remove('is-visible');
     elStatus.textContent = '';
     elChoices.replaceChildren();
 
@@ -428,15 +569,23 @@ function updateCard() {
     });
 }
 
+elEmojiDisplay.addEventListener('click', () => {
+    elEnglishLabel.classList.add('is-visible');
+    elEmojiDisplay.setAttribute('aria-expanded', 'true');
+});
+
 function selectAnswer(button, selectedFood, questionFood) {
     if (selectedFood !== questionFood) {
-        failureCounts[questionFood.english] += 1;
-        saveFailureCounts();
-        elStatus.textContent = `Try again. Missed ${failureCounts[questionFood.english]} time(s).`;
+        currentRoundMisses += 1;
+        updatePracticeStats(questionFood);
+        elStatus.textContent = `Try again. Missed ${currentRoundMisses} time(s) this round.`;
         return;
     }
 
+    recordAppearanceMisses(questionFood, currentRoundMisses);
+    currentRoundMisses = 0;
     recordAnswerTime(questionFood, performance.now() - questionStartedAt);
+    updatePracticeStats(questionFood);
     elStatus.textContent = 'Correct';
     button.classList.add('correct');
     elChoices.querySelectorAll('button').forEach(choice => {
