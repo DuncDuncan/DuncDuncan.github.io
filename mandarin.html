@@ -8,29 +8,73 @@
 <style>
 body {
     margin: 0;
-    height: 100vh;
-    height: 100dvh;
-    min-height: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    justify-content: flex-start;
     align-items: center;
     background: #111;
     color: white;
     font-family: Arial, sans-serif;
     text-align: center;
     user-select: none; /* Prevents text selection highlighting on rapid clicks */
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .card {
     box-sizing: border-box;
     width: min(760px, 100%);
-    height: 100%;
-    max-height: 100%;
-    min-height: 0;
+    flex: 0 0 auto;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     padding: clamp(8px, 2.5vh, 30px) 18px;
+}
+
+.ranking-section {
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    width: min(760px, 100%);
+    padding: 22px 18px 48px;
+    border-top: 1px solid #333;
+}
+
+.ranking-section h2 {
+    margin: 0 0 12px;
+    color: #ddd;
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: left;
+}
+
+.weight-ranking {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    text-align: left;
+}
+
+.weight-ranking li {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 8px 0;
+    border-bottom: 1px solid #292929;
+    color: #ccc;
+    font-size: 0.9rem;
+}
+
+.ranking-weight {
+    color: #ffd700;
+    font-variant-numeric: tabular-nums;
 }
 
 .practice-stats {
@@ -288,6 +332,11 @@ a {
     <div id="status" class="status" role="status" aria-live="polite"></div>
 </div>
 
+<section class="ranking-section" aria-labelledby="rankingHeading">
+    <h2 id="rankingHeading">Items by practice weight</h2>
+    <ul id="weightRanking" class="weight-ranking"></ul>
+</section>
+
 <script>
 const vocabularyItems = [
     { english: "Apple", emoji: "🍎", chinese: "苹果", pinyin: "píng guǒ", phonetic: "peeng gwor" },
@@ -480,6 +529,23 @@ function logItemSelection(selection, totalWeight) {
     console.log(`selectionChancePercent=${selectionChancePercent}%, misses=${selection.misses}, recentAnswerTimesSeconds=[${selection.recentAnswerTimesSeconds.join(', ')}], weight=${selection.weightBeforeBoost.toFixed(3)}, seedFactor=${selection.seedFactor}, boostedWeight=${selection.weight.toFixed(3)}`);
 }
 
+function renderWeightRanking() {
+    const ranking = vocabularyItems
+        .map(item => ({ english: item.english, weight: getItemWeightDetails(item).weight }))
+        .sort((first, second) => second.weight - first.weight);
+    const rankingList = document.getElementById('weightRanking');
+    rankingList.replaceChildren(...ranking.map(item => {
+        const row = document.createElement('li');
+        const name = document.createElement('span');
+        const weight = document.createElement('span');
+        name.textContent = item.english;
+        weight.className = 'ranking-weight';
+        weight.textContent = item.weight.toFixed(3);
+        row.append(name, weight);
+        return row;
+    }));
+}
+
 function chooseNextItem(previousItem) {
     const candidates = vocabularyItems.filter(item => item !== previousItem);
     const weightedCandidates = candidates.map(item => ({ item, ...getItemWeightDetails(item) }));
@@ -568,6 +634,7 @@ function speakChinese(text, onEnd) {
 function updateCard() {
     const questionItem = currentItem;
     questionStartedAt = performance.now();
+    renderWeightRanking();
     currentRoundMisses = 0;
     updatePracticeStats(questionItem);
     elEmojiDisplay.textContent = questionItem.emoji;
