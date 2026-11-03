@@ -191,7 +191,8 @@ const foods = [
     { english: "Shrimp", emoji: "🍤", chinese: "虾", pinyin: "xiā", phonetic: "shyah" }          // New addition
 ];
 
-// Fisher-Yates Shuffle algorithm to randomize the array elements perfectly
+const failureStorageKey = 'mandarin-food-failures';
+
 function shuffleDeck(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -199,10 +200,42 @@ function shuffleDeck(array) {
     }
 }
 
-// Shuffle the cards immediately upon loading the script
-shuffleDeck(foods);
+function loadFailureCounts() {
+    try {
+        const savedCounts = JSON.parse(localStorage.getItem(failureStorageKey) || '{}');
+        return Object.fromEntries(foods.map(food => {
+            const count = savedCounts[food.english];
+            return [food.english, Number.isSafeInteger(count) && count > 0 ? count : 0];
+        }));
+    } catch {
+        return Object.fromEntries(foods.map(food => [food.english, 0]));
+    }
+}
 
-let currentIndex = 0;
+const failureCounts = loadFailureCounts();
+
+function saveFailureCounts() {
+    try {
+        localStorage.setItem(failureStorageKey, JSON.stringify(failureCounts));
+    } catch {}
+}
+
+function chooseNextFood(previousFood) {
+    const candidates = foods.filter(food => food !== previousFood);
+    const totalWeight = candidates.reduce((total, food) => total + 1 + failureCounts[food.english], 0);
+    let randomWeight = Math.random() * totalWeight;
+
+    for (const food of candidates) {
+        randomWeight -= 1 + failureCounts[food.english];
+        if (randomWeight < 0) {
+            return food;
+        }
+    }
+
+    return candidates[candidates.length - 1];
+}
+
+let currentFood = chooseNextFood();
 
 const elEmojiDisplay = document.getElementById('emojiDisplay');
 const elChoices = document.getElementById('choices');
@@ -220,7 +253,20 @@ if (window.speechSynthesis.onvoiceschanged !== undefined) {
 
 function speakChinese(text, onEnd) {
     window.speechSynthesis.cancel();
-    
+
+    let hasAdvanced = false;
+    const fallbackTimer = window.setTimeout(advance, 5000);
+
+    function advance() {
+        if (hasAdvanced) {
+            return;
+        }
+
+        hasAdvanced = true;
+        window.clearTimeout(fallbackTimer);
+        onEnd();
+    }
+
     const utterance = new SpeechSynthesisUtterance(text);
     const targetVoice = getChineseVoice();
     
@@ -232,20 +278,25 @@ function speakChinese(text, onEnd) {
         utterance.lang = 'zh-CN';
     }
 
-    utterance.onend = onEnd;
-    
-    window.speechSynthesis.speak(utterance);
+    utterance.onend = advance;
+    utterance.onerror = advance;
+
+    try {
+        window.speechSynthesis.speak(utterance);
+    } catch {
+        advance();
+    }
 }
 
 function updateCard() {
-    const currentFood = foods[currentIndex];
-    elEmojiDisplay.textContent = currentFood.emoji;
+    const questionFood = currentFood;
+    elEmojiDisplay.textContent = questionFood.emoji;
     elStatus.textContent = '';
     elChoices.replaceChildren();
 
-    const distractors = foods.filter(food => food !== currentFood);
+    const distractors = foods.filter(food => food !== questionFood);
     shuffleDeck(distractors);
-    const choices = [currentFood, ...distractors.slice(0, 8)];
+    const choices = [questionFood, ...distractors.slice(0, 8)];
     shuffleDeck(choices);
 
     choices.forEach(food => {
@@ -256,14 +307,16 @@ function updateCard() {
         button.querySelector('.choice-chinese').textContent = food.chinese;
         button.querySelector('.choice-pinyin').textContent = food.pinyin;
         button.querySelector('.choice-phonetic').textContent = food.phonetic;
-        button.addEventListener('click', () => selectAnswer(button, food, currentFood));
+        button.addEventListener('click', () => selectAnswer(button, food, questionFood));
         elChoices.appendChild(button);
     });
 }
 
-function selectAnswer(button, selectedFood, currentFood) {
-    if (selectedFood !== currentFood) {
-        elStatus.textContent = 'Try again';
+function selectAnswer(button, selectedFood, questionFood) {
+    if (selectedFood !== questionFood) {
+        failureCounts[questionFood.english] += 1;
+        saveFailureCounts();
+        elStatus.textContent = `Try again. Missed ${failureCounts[questionFood.english]} time(s).`;
         return;
     }
 
@@ -273,8 +326,8 @@ function selectAnswer(button, selectedFood, currentFood) {
         choice.disabled = true;
     });
 
-    speakChinese(currentFood.chinese, () => {
-        currentIndex = (currentIndex + 1) % foods.length;
+    speakChinese(questionFood.chinese, () => {
+        currentFood = chooseNextFood(questionFood);
         updateCard();
     });
 }
