@@ -8,7 +8,9 @@
 <style>
 body {
     margin: 0;
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -17,17 +19,33 @@ body {
     font-family: Arial, sans-serif;
     text-align: center;
     user-select: none; /* Prevents text selection highlighting on rapid clicks */
+    overflow: hidden;
 }
 
 .card {
-    padding: 30px;
+    box-sizing: border-box;
     width: min(760px, 100%);
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: clamp(8px, 2.5vh, 30px) 18px;
+}
+
+.emoji-zone {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Made the emoji large and consistent in both states */
 .emoji-display {
+    flex: 0 0 auto;
     font-size: 10rem;
-    margin-bottom: 10px;
+    line-height: 1;
 }
 
 .chinese {
@@ -49,15 +67,23 @@ body {
 }
 
 .choices {
+    flex: 0 0 auto;
+    align-self: center;
+    min-height: 0;
+    width: min(100%, 360px, max(192px, calc(100dvh - 180px)));
+    aspect-ratio: 1;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-    margin-top: 24px;
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: clamp(4px, 1vh, 10px);
+    margin-top: clamp(8px, 1.5vh, 16px);
 }
 
 .choice {
-    min-height: 112px;
-    padding: 12px;
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 0;
+    padding: clamp(3px, 1vh, 12px);
     border: 1px solid #444;
     border-radius: 6px;
     background: #202020;
@@ -93,28 +119,31 @@ body {
 
 .choice-chinese {
     color: #ffd700;
-    font-size: 1.6rem;
+    font-size: 1.4rem;
 }
 
 .choice-pinyin {
-    margin-top: 4px;
+    margin-top: 3px;
 }
 
 .choice-phonetic {
-    margin-top: 3px;
+    margin-top: 2px;
     color: #aaa;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
+    overflow-wrap: anywhere;
 }
 
 .status {
+    flex: 0 0 auto;
     min-height: 1.5rem;
-    margin-top: 12px;
+    margin-top: clamp(4px, 1vh, 12px);
     color: #aaa;
 }
 
 @media (max-width: 520px) {
     .card {
-        padding: 18px;
+        padding-right: 10px;
+        padding-left: 10px;
     }
 
     .emoji-display {
@@ -122,13 +151,57 @@ body {
     }
 
     .choices {
-        gap: 8px;
-        margin-top: 16px;
+        gap: clamp(4px, 1vh, 8px);
     }
 
     .choice {
-        min-height: 100px;
-        padding: 8px 4px;
+        padding: 4px 2px;
+    }
+
+    .choice-chinese {
+        font-size: 1.2rem;
+    }
+
+    .choice-pinyin {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-height: 480px) {
+    .card {
+        padding-top: 6px;
+        padding-bottom: 6px;
+    }
+
+    .choice {
+        padding: 2px 1px;
+    }
+
+    .emoji-display {
+        font-size: 2.8rem;
+    }
+
+    .choices {
+        margin-top: 6px;
+    }
+
+    .choice-chinese {
+        font-size: 0.9rem;
+    }
+
+    .choice-pinyin {
+        margin-top: 1px;
+        font-size: 0.7rem;
+    }
+
+    .choice-phonetic {
+        margin-top: 1px;
+        font-size: 0.6rem;
+    }
+
+    .status {
+        margin-top: 2px;
+        min-height: 1.2rem;
     }
 }
 
@@ -154,7 +227,9 @@ a {
 <body>
 
 <div class="card">
-    <div id="emojiDisplay" class="emoji-display"></div>
+    <div class="emoji-zone">
+        <div id="emojiDisplay" class="emoji-display"></div>
+    </div>
     <div id="choices" class="choices" aria-label="Choose the matching Chinese vocabulary"></div>
     <div id="status" class="status" role="status" aria-live="polite"></div>
 </div>
@@ -192,6 +267,8 @@ const foods = [
 ];
 
 const failureStorageKey = 'mandarin-food-failures';
+const answerTimeStorageKey = 'mandarin-food-answer-times';
+const maxTrackedAnswerTimeMs = 60000;
 
 function shuffleDeck(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -214,19 +291,56 @@ function loadFailureCounts() {
 
 const failureCounts = loadFailureCounts();
 
+function loadAnswerTimes() {
+    try {
+        const savedTimes = JSON.parse(localStorage.getItem(answerTimeStorageKey) || '{}');
+        return Object.fromEntries(foods.map(food => {
+            const record = savedTimes[food.english];
+            if (!record || !Number.isFinite(record.averageMs) || !Number.isSafeInteger(record.samples) || record.averageMs < 0 || record.samples < 1) {
+                return [food.english, { averageMs: 0, samples: 0 }];
+            }
+            return [food.english, { averageMs: record.averageMs, samples: record.samples }];
+        }));
+    } catch {
+        return Object.fromEntries(foods.map(food => [food.english, { averageMs: 0, samples: 0 }]));
+    }
+}
+
+const answerTimes = loadAnswerTimes();
+
 function saveFailureCounts() {
     try {
         localStorage.setItem(failureStorageKey, JSON.stringify(failureCounts));
     } catch {}
 }
 
+function saveAnswerTimes() {
+    try {
+        localStorage.setItem(answerTimeStorageKey, JSON.stringify(answerTimes));
+    } catch {}
+}
+
+function recordAnswerTime(food, elapsedMs) {
+    const record = answerTimes[food.english];
+    const duration = Math.min(elapsedMs, maxTrackedAnswerTimeMs);
+    record.averageMs += (duration - record.averageMs) / (record.samples + 1);
+    record.samples += 1;
+    saveAnswerTimes();
+}
+
+function getFoodWeight(food) {
+    const averageMs = Math.min(answerTimes[food.english].averageMs, maxTrackedAnswerTimeMs);
+    const timeFactor = 1 + averageMs / 5000;
+    return (1 + failureCounts[food.english]) * timeFactor;
+}
+
 function chooseNextFood(previousFood) {
     const candidates = foods.filter(food => food !== previousFood);
-    const totalWeight = candidates.reduce((total, food) => total + 1 + failureCounts[food.english], 0);
+    const totalWeight = candidates.reduce((total, food) => total + getFoodWeight(food), 0);
     let randomWeight = Math.random() * totalWeight;
 
     for (const food of candidates) {
-        randomWeight -= 1 + failureCounts[food.english];
+        randomWeight -= getFoodWeight(food);
         if (randomWeight < 0) {
             return food;
         }
@@ -236,6 +350,7 @@ function chooseNextFood(previousFood) {
 }
 
 let currentFood = chooseNextFood();
+let questionStartedAt = 0;
 
 const elEmojiDisplay = document.getElementById('emojiDisplay');
 const elChoices = document.getElementById('choices');
@@ -290,6 +405,7 @@ function speakChinese(text, onEnd) {
 
 function updateCard() {
     const questionFood = currentFood;
+    questionStartedAt = performance.now();
     elEmojiDisplay.textContent = questionFood.emoji;
     elStatus.textContent = '';
     elChoices.replaceChildren();
@@ -320,6 +436,7 @@ function selectAnswer(button, selectedFood, questionFood) {
         return;
     }
 
+    recordAnswerTime(questionFood, performance.now() - questionStartedAt);
     elStatus.textContent = 'Correct';
     button.classList.add('correct');
     elChoices.querySelectorAll('button').forEach(choice => {
