@@ -362,7 +362,7 @@ const vocabularyItems = [
 const missHistoryStorageKey = 'mandarin-food-miss-history';
 const answerTimeStorageKey = 'mandarin-food-answer-times';
 const maxTrackedAnswerTimeMs = 60000;
-const newItemSeedWeights = [16, 8, 4];
+const newItemSeedWeights = [10000, 1000, 100, 10, 1];
 
 function shuffleDeck(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -461,6 +461,8 @@ function getItemWeightDetails(item) {
     const missFactor = 1 + misses;
     const timeFactor = 1 + averageMs / 5000;
     const seedFactor = newItemSeedWeights[appearances] ?? 1;
+    const weightBeforeBoost = missFactor * timeFactor;
+    const weight = weightBeforeBoost * seedFactor;
     return {
         misses,
         recentAnswerTimesSeconds: answerTime.durations.map(duration => Number((duration / 1000).toFixed(2))),
@@ -468,13 +470,14 @@ function getItemWeightDetails(item) {
         missFactor,
         timeFactor: Number(timeFactor.toFixed(3)),
         seedFactor,
-        weight: missFactor * timeFactor * seedFactor
+        weightBeforeBoost,
+        weight
     };
 }
 
 function logItemSelection(selection, totalWeight) {
     const selectionChancePercent = (selection.weight / totalWeight * 100).toFixed(2);
-    console.log(`selectionChancePercent=${selectionChancePercent}%, misses=${selection.misses}, recentAnswerTimesSeconds=[${selection.recentAnswerTimesSeconds.join(', ')}]`);
+    console.log(`selectionChancePercent=${selectionChancePercent}%, misses=${selection.misses}, recentAnswerTimesSeconds=[${selection.recentAnswerTimesSeconds.join(', ')}], weight=${selection.weightBeforeBoost.toFixed(3)}, seedFactor=${selection.seedFactor}, boostedWeight=${selection.weight.toFixed(3)}`);
 }
 
 function chooseNextItem(previousItem) {
