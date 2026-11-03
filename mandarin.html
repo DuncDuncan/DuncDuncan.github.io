@@ -8,7 +8,7 @@
 <style>
 body {
     margin: 0;
-    height: 90vh;
+    min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -16,12 +16,12 @@ body {
     color: white;
     font-family: Arial, sans-serif;
     text-align: center;
-    cursor: pointer;
     user-select: none; /* Prevents text selection highlighting on rapid clicks */
 }
 
 .card {
     padding: 30px;
+    width: min(760px, 100%);
 }
 
 /* Made the emoji large and consistent in both states */
@@ -45,9 +45,91 @@ body {
 
 .phonetic {
     font-size: 1.5rem;
-    margin-top: 10px;
     color: #aaa;
-    min-height: 1.8rem;
+}
+
+.choices {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 24px;
+}
+
+.choice {
+    min-height: 112px;
+    padding: 12px;
+    border: 1px solid #444;
+    border-radius: 6px;
+    background: #202020;
+    color: white;
+    cursor: pointer;
+    font: inherit;
+}
+
+.choice:hover:not(:disabled) {
+    border-color: #ffd700;
+    background: #292714;
+}
+
+.choice:focus-visible {
+    outline: 2px solid #ffd700;
+    outline-offset: 2px;
+}
+
+.choice:disabled {
+    cursor: default;
+}
+
+.choice.correct {
+    border-color: #69c779;
+    background: #18301d;
+}
+
+.choice-chinese,
+.choice-pinyin,
+.choice-phonetic {
+    display: block;
+}
+
+.choice-chinese {
+    color: #ffd700;
+    font-size: 1.6rem;
+}
+
+.choice-pinyin {
+    margin-top: 4px;
+}
+
+.choice-phonetic {
+    margin-top: 3px;
+    color: #aaa;
+    font-size: 0.9rem;
+}
+
+.status {
+    min-height: 1.5rem;
+    margin-top: 12px;
+    color: #aaa;
+}
+
+@media (max-width: 520px) {
+    .card {
+        padding: 18px;
+    }
+
+    .emoji-display {
+        font-size: 7rem;
+    }
+
+    .choices {
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+    .choice {
+        min-height: 100px;
+        padding: 8px 4px;
+    }
 }
 
 .instructions {
@@ -72,15 +154,9 @@ a {
 <body>
 
 <div class="card">
-    <!-- Displays ONLY the emoji asset -->
     <div id="emojiDisplay" class="emoji-display"></div>
-    <div id="chinese" class="chinese"></div>
-    <div id="pinyin" class="pinyin"></div>
-    <div id="phonetic" class="phonetic"></div>
-</div>
-
-<div class="instructions">
-    Click to reveal • Click again for next word
+    <div id="choices" class="choices" aria-label="Choose the matching Chinese vocabulary"></div>
+    <div id="status" class="status" role="status" aria-live="polite"></div>
 </div>
 
 <script>
@@ -127,12 +203,10 @@ function shuffleDeck(array) {
 shuffleDeck(foods);
 
 let currentIndex = 0;
-let isRevealed = false;
 
 const elEmojiDisplay = document.getElementById('emojiDisplay');
-const elChinese = document.getElementById('chinese');
-const elPinyin = document.getElementById('pinyin');
-const elPhonetic = document.getElementById('phonetic');
+const elChoices = document.getElementById('choices');
+const elStatus = document.getElementById('status');
 
 // Find a matching voice from the system engine
 function getChineseVoice() {
@@ -144,7 +218,7 @@ if (window.speechSynthesis.onvoiceschanged !== undefined) {
     window.speechSynthesis.onvoiceschanged = getChineseVoice;
 }
 
-function speakChinese(text) {
+function speakChinese(text, onEnd) {
     window.speechSynthesis.cancel();
     
     const utterance = new SpeechSynthesisUtterance(text);
@@ -157,41 +231,53 @@ function speakChinese(text) {
     } else {
         utterance.lang = 'zh-CN';
     }
+
+    utterance.onend = onEnd;
     
     window.speechSynthesis.speak(utterance);
 }
 
 function updateCard() {
     const currentFood = foods[currentIndex];
-    
-    // Always render just the emoji string element
-    elEmojiDisplay.innerHTML = `<span>${currentFood.emoji}</span>`;
-    
-    if (isRevealed) {
-        // Revealed state: Show Chinese vocabulary data tracks
-        elChinese.textContent = currentFood.chinese;
-        elPinyin.textContent = currentFood.pinyin;
-        elPhonetic.textContent = currentFood.phonetic;
-        
-        speakChinese(currentFood.chinese);
-    } else {
-        // Hidden state: Blank out character tracks
-        elChinese.textContent = "";
-        elPinyin.textContent = "";
-        elPhonetic.textContent = "";
-    }
+    elEmojiDisplay.textContent = currentFood.emoji;
+    elStatus.textContent = '';
+    elChoices.replaceChildren();
+
+    const distractors = foods.filter(food => food !== currentFood);
+    shuffleDeck(distractors);
+    const choices = [currentFood, ...distractors.slice(0, 8)];
+    shuffleDeck(choices);
+
+    choices.forEach(food => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'choice';
+        button.innerHTML = `<span class="choice-chinese"></span><span class="choice-pinyin"></span><span class="choice-phonetic"></span>`;
+        button.querySelector('.choice-chinese').textContent = food.chinese;
+        button.querySelector('.choice-pinyin').textContent = food.pinyin;
+        button.querySelector('.choice-phonetic').textContent = food.phonetic;
+        button.addEventListener('click', () => selectAnswer(button, food, currentFood));
+        elChoices.appendChild(button);
+    });
 }
 
-document.body.addEventListener('click', () => {
-    if (!isRevealed) {
-        isRevealed = true;
-        updateCard();
-    } else {
-        isRevealed = false;
+function selectAnswer(button, selectedFood, currentFood) {
+    if (selectedFood !== currentFood) {
+        elStatus.textContent = 'Try again';
+        return;
+    }
+
+    elStatus.textContent = 'Correct';
+    button.classList.add('correct');
+    elChoices.querySelectorAll('button').forEach(choice => {
+        choice.disabled = true;
+    });
+
+    speakChinese(currentFood.chinese, () => {
         currentIndex = (currentIndex + 1) % foods.length;
         updateCard();
-    }
-});
+    });
+}
 
 updateCard();
 </script>
