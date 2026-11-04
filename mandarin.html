@@ -877,6 +877,7 @@ const elLetterKeyboard = document.getElementById('letterKeyboard');
 const elBackspaceKey = document.getElementById('backspaceKey');
 const elClearPinyin = document.getElementById('clearPinyin');
 let isTypingMode = false;
+let preferredTypingMode = false;
 let isTypingLocked = false;
 let typedPinyin = '';
 
@@ -885,12 +886,12 @@ function normalizePinyin(value) {
 }
 
 function renderTypedPinyin() {
-    const syllables = normalizePinyin(currentItem.pinyin).split(' ');
-    let remainingLetters = typedPinyin;
+    const syllables = currentItem.pinyin.split(' ');
+    let remainingLetters = typedPinyin.length;
     const displayedPinyin = syllables.map(syllable => {
-        const typedSyllable = remainingLetters.slice(0, syllable.length);
-        remainingLetters = remainingLetters.slice(typedSyllable.length);
-        return typedSyllable;
+        const typedLength = Math.min(remainingLetters, normalizePinyin(syllable).length);
+        remainingLetters -= typedLength;
+        return Array.from(syllable).slice(0, typedLength).join('');
     }).join(' ').trimEnd();
     elTypedPinyin.textContent = displayedPinyin || '...';
 }
@@ -913,13 +914,19 @@ function renderLetterKeyboard() {
     });
 }
 
-function updateInputMode() {
-    isTypingMode = elModeToggle.checked;
+function setInputMode(typingMode) {
+    isTypingMode = typingMode;
+    elModeToggle.checked = typingMode;
     typedPinyin = '';
     elChoices.hidden = isTypingMode;
     elTypingPanel.hidden = !isTypingMode;
     elStatus.textContent = '';
     renderTypedPinyin();
+}
+
+function updateInputMode() {
+    preferredTypingMode = elModeToggle.checked;
+    setInputMode(preferredTypingMode);
 }
 
 function editTypedPinyin(action) {
@@ -945,10 +952,8 @@ function enterPinyinLetter(letter, button) {
     } else if (!expectedPinyin.startsWith(typedPinyin)) {
         currentRoundMisses += 1;
         updatePracticeStats(currentItem);
-        flashAnswer(button, 'wrong');
-        typedPinyin = '';
-        renderTypedPinyin();
-        elStatus.textContent = 'Try again';
+        setInputMode(false);
+        elStatus.textContent = 'Pinyin was incorrect. Choose the matching answer.';
     } else {
         elStatus.textContent = '';
     }
@@ -1068,6 +1073,9 @@ function speakChinese(text, onEnd) {
 
 function updateCard() {
     const questionItem = currentItem;
+    if (isTypingMode !== preferredTypingMode) {
+        setInputMode(preferredTypingMode);
+    }
     questionStartedAt = performance.now();
     isTypingLocked = false;
     typedPinyin = '';
