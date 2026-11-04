@@ -79,7 +79,7 @@ body {
 
 .practice-stats {
     position: fixed;
-    top: 12px;
+    top: 44px;
     left: 12px;
     z-index: 1;
     display: grid;
@@ -89,6 +89,59 @@ body {
     font-size: 0.75rem;
     text-align: left;
     pointer-events: none;
+}
+
+.mode-switch {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #aaa;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.mode-switch input {
+    position: relative;
+    width: 30px;
+    height: 18px;
+    margin: 0;
+    appearance: none;
+    border: 1px solid #555;
+    border-radius: 10px;
+    background: #333;
+    cursor: pointer;
+}
+
+.mode-switch input::before {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #bbb;
+    content: "";
+    transition: transform 120ms ease, background 120ms ease;
+}
+
+.mode-switch input:checked {
+    border-color: #b59c00;
+    background: #514700;
+}
+
+.mode-switch input:checked::before {
+    transform: translateX(12px);
+    background: #ffd700;
+}
+
+.mode-switch input:focus-visible {
+    outline: 2px solid #ffd700;
+    outline-offset: 3px;
 }
 
 .category-filters {
@@ -204,6 +257,94 @@ body {
     grid-template-rows: repeat(3, minmax(0, 1fr));
     gap: clamp(4px, 1vh, 10px);
     margin-top: clamp(8px, 1.5vh, 16px);
+}
+
+.choices[hidden] {
+    display: none;
+}
+
+.typing-panel {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: clamp(8px, 1.5vh, 16px);
+}
+
+.typing-panel[hidden] {
+    display: none;
+}
+
+.typed-pinyin {
+    min-height: 1.5em;
+    color: #ffd700;
+    font-size: 1.4rem;
+}
+
+.letter-keyboard {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: clamp(3px, 0.8vh, 6px);
+    width: min(100%, 360px, max(180px, calc((100dvh - 220px) * 5 / 6)));
+}
+
+.letter-key {
+    display: grid;
+    min-width: 0;
+    aspect-ratio: 1;
+    place-items: center;
+    padding: 0;
+    border: 1px solid #444;
+    border-radius: 5px;
+    background: #202020;
+    color: white;
+    cursor: pointer;
+    font: inherit;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+}
+
+.letter-key:hover:not(:disabled) {
+    border-color: #ffd700;
+    background: #292714;
+}
+
+.letter-key:focus-visible,
+.typing-action:focus-visible {
+    outline: 2px solid #ffd700;
+    outline-offset: 2px;
+}
+
+.letter-key:disabled {
+    cursor: default;
+}
+
+.letter-key.letter-z {
+    grid-column: 3;
+}
+
+.typing-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.typing-action {
+    min-width: 42px;
+    min-height: 32px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    background: #202020;
+    color: #ccc;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.85rem;
+}
+
+.typing-action:hover {
+    border-color: #888;
+    color: white;
 }
 
 .choice {
@@ -339,6 +480,24 @@ body {
         margin-top: 6px;
     }
 
+    .typing-panel {
+        gap: 4px;
+        margin-top: 6px;
+    }
+
+    .letter-keyboard {
+        width: min(100%, 180px);
+    }
+
+    .letter-key {
+        font-size: 0.85rem;
+    }
+
+    .typed-pinyin {
+        min-height: 1.2em;
+        font-size: 1rem;
+    }
+
     .choice-chinese {
         font-size: 0.9rem;
     }
@@ -385,6 +544,12 @@ a {
     <div><span>Avg time</span><strong id="averageTime">-</strong></div>
 </aside>
 
+<label class="mode-switch">
+    <span>Choice</span>
+    <input id="modeToggle" type="checkbox" role="switch" aria-label="Use pinyin typing mode">
+    <span>Pinyin</span>
+</label>
+
 <nav class="category-filters" aria-label="Vocabulary categories">
     <button class="category-toggle" type="button" data-category="food" aria-pressed="true">食物</button>
     <button class="category-toggle" type="button" data-category="travel" aria-pressed="true">旅行</button>
@@ -397,6 +562,14 @@ a {
         <div id="englishLabel" class="english-label" aria-live="polite"></div>
     </div>
     <div id="choices" class="choices" aria-label="Choose the matching Chinese vocabulary"></div>
+    <div id="typingPanel" class="typing-panel" hidden>
+        <div id="typedPinyin" class="typed-pinyin" aria-live="polite"></div>
+        <div id="letterKeyboard" class="letter-keyboard" aria-label="Pinyin letter keyboard"></div>
+        <div class="typing-actions">
+            <button id="backspaceKey" class="typing-action" type="button" aria-label="Delete last letter">⌫</button>
+            <button id="clearPinyin" class="typing-action" type="button">Clear</button>
+        </div>
+    </div>
     <div id="status" class="status" role="status" aria-live="polite"></div>
 </div>
 
@@ -697,6 +870,113 @@ const elChoices = document.getElementById('choices');
 const elStatus = document.getElementById('status');
 const elMissCount = document.getElementById('missCount');
 const elAverageTime = document.getElementById('averageTime');
+const elModeToggle = document.getElementById('modeToggle');
+const elTypingPanel = document.getElementById('typingPanel');
+const elTypedPinyin = document.getElementById('typedPinyin');
+const elLetterKeyboard = document.getElementById('letterKeyboard');
+const elBackspaceKey = document.getElementById('backspaceKey');
+const elClearPinyin = document.getElementById('clearPinyin');
+let isTypingMode = false;
+let isTypingLocked = false;
+let typedPinyin = '';
+
+function normalizePinyin(value) {
+    return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+function renderTypedPinyin() {
+    const syllables = normalizePinyin(currentItem.pinyin).split(' ');
+    let remainingLetters = typedPinyin;
+    const displayedPinyin = syllables.map(syllable => {
+        const typedSyllable = remainingLetters.slice(0, syllable.length);
+        remainingLetters = remainingLetters.slice(typedSyllable.length);
+        return typedSyllable;
+    }).join(' ').trimEnd();
+    elTypedPinyin.textContent = displayedPinyin || '...';
+}
+
+function renderLetterKeyboard() {
+    const letters = Array.from({ length: 25 }, (_, index) => String.fromCharCode(65 + index));
+    letters.push('Z');
+    letters.forEach(letter => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'letter-key';
+        button.dataset.letter = letter;
+        button.textContent = letter;
+        button.setAttribute('aria-label', letter);
+        if (letter === 'Z') {
+            button.classList.add('letter-z');
+        }
+        button.addEventListener('click', () => enterPinyinLetter(letter, button));
+        elLetterKeyboard.appendChild(button);
+    });
+}
+
+function updateInputMode() {
+    isTypingMode = elModeToggle.checked;
+    typedPinyin = '';
+    elChoices.hidden = isTypingMode;
+    elTypingPanel.hidden = !isTypingMode;
+    elStatus.textContent = '';
+    renderTypedPinyin();
+}
+
+function editTypedPinyin(action) {
+    if (!isTypingMode || isTypingLocked) {
+        return;
+    }
+    typedPinyin = action === 'backspace' ? typedPinyin.slice(0, -1) : '';
+    elStatus.textContent = '';
+    renderTypedPinyin();
+}
+
+function enterPinyinLetter(letter, button) {
+    if (!isTypingMode || isTypingLocked) {
+        return;
+    }
+
+    typedPinyin += letter.toLowerCase();
+    renderTypedPinyin();
+    const expectedPinyin = normalizePinyin(currentItem.pinyin).replace(/\s/g, '');
+
+    if (typedPinyin === expectedPinyin) {
+        completeAnswer(button, currentItem);
+    } else if (!expectedPinyin.startsWith(typedPinyin)) {
+        currentRoundMisses += 1;
+        updatePracticeStats(currentItem);
+        flashAnswer(button, 'wrong');
+        typedPinyin = '';
+        renderTypedPinyin();
+        elStatus.textContent = 'Try again';
+    } else {
+        elStatus.textContent = '';
+    }
+}
+
+function completeAnswer(button, questionItem) {
+    if (isTypingLocked) {
+        return;
+    }
+    isTypingLocked = true;
+    recordAppearanceMisses(questionItem, currentRoundMisses);
+    currentRoundMisses = 0;
+    recordAnswerTime(questionItem, performance.now() - questionStartedAt);
+    updatePracticeStats(questionItem);
+    elStatus.textContent = 'Correct';
+    flashAnswer(button, 'correct');
+    elChoices.querySelectorAll('button').forEach(choice => {
+        choice.disabled = true;
+    });
+    elLetterKeyboard.querySelectorAll('button').forEach(key => {
+        key.disabled = true;
+    });
+
+    speakChinese(questionItem.chinese, () => {
+        currentItem = chooseNextItem(questionItem);
+        updateCard();
+    });
+}
 
 function saveSelectedCategories() {
     try {
@@ -789,6 +1069,12 @@ function speakChinese(text, onEnd) {
 function updateCard() {
     const questionItem = currentItem;
     questionStartedAt = performance.now();
+    isTypingLocked = false;
+    typedPinyin = '';
+    elLetterKeyboard.querySelectorAll('button').forEach(key => {
+        key.disabled = false;
+    });
+    renderTypedPinyin();
     renderWeightRanking();
     currentRoundMisses = 0;
     updatePracticeStats(questionItem);
@@ -817,6 +1103,10 @@ function updateCard() {
     });
 }
 
+elModeToggle.addEventListener('change', updateInputMode);
+elBackspaceKey.addEventListener('click', () => editTypedPinyin('backspace'));
+elClearPinyin.addEventListener('click', () => editTypedPinyin('clear'));
+
 function flashAnswer(button, result) {
     const previousTimer = answerFlashTimers.get(button);
     if (previousTimer) {
@@ -841,6 +1131,9 @@ elEmojiDisplay.addEventListener('click', () => {
 });
 
 function selectAnswer(button, selectedItem, questionItem) {
+    if (isTypingLocked) {
+        return;
+    }
     if (selectedItem !== questionItem) {
         currentRoundMisses += 1;
         flashAnswer(button, 'wrong');
@@ -849,23 +1142,12 @@ function selectAnswer(button, selectedItem, questionItem) {
         return;
     }
 
-    recordAppearanceMisses(questionItem, currentRoundMisses);
-    currentRoundMisses = 0;
-    recordAnswerTime(questionItem, performance.now() - questionStartedAt);
-    updatePracticeStats(questionItem);
-    elStatus.textContent = 'Correct';
-    flashAnswer(button, 'correct');
-    elChoices.querySelectorAll('button').forEach(choice => {
-        choice.disabled = true;
-    });
-
-    speakChinese(questionItem.chinese, () => {
-        currentItem = chooseNextItem(questionItem);
-        updateCard();
-    });
+    completeAnswer(button, questionItem);
 }
 
 renderCategoryFilters();
+renderLetterKeyboard();
+updateInputMode();
 updateCard();
 </script>
 
