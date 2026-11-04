@@ -256,25 +256,32 @@ body {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-template-rows: repeat(3, minmax(0, 1fr));
     gap: clamp(4px, 1vh, 10px);
-    margin-top: clamp(8px, 1.5vh, 16px);
 }
 
-.choices[hidden] {
-    display: none;
-}
-
-.typing-panel {
-    display: flex;
+.input-area {
+    display: grid;
     flex: 0 0 auto;
-    flex-direction: column;
     align-items: center;
-    gap: 8px;
+    justify-items: center;
     width: 100%;
     margin-top: clamp(8px, 1.5vh, 16px);
 }
 
-.typing-panel[hidden] {
-    display: none;
+.input-area > * {
+    grid-area: 1 / 1;
+}
+
+.input-mode-inactive {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.typing-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
 }
 
 .typed-pinyin {
@@ -449,13 +456,8 @@ body {
         font-size: 2.8rem;
     }
 
-    .choices {
-        margin-top: 6px;
-    }
-
     .typing-panel {
         gap: 4px;
-        margin-top: 6px;
     }
 
     .letter-keyboard {
@@ -534,10 +536,12 @@ a {
         <button id="emojiDisplay" class="emoji-display" type="button" aria-label="Reveal the English word" aria-expanded="false"></button>
         <div id="englishLabel" class="english-label" aria-live="polite"></div>
     </div>
-    <div id="choices" class="choices" aria-label="Choose the matching Chinese vocabulary"></div>
-    <div id="typingPanel" class="typing-panel" hidden>
-        <div id="typedPinyin" class="typed-pinyin" aria-live="polite"></div>
-        <div id="letterKeyboard" class="letter-keyboard" aria-label="Pinyin letter keyboard"></div>
+    <div class="input-area">
+        <div id="choices" class="choices" aria-label="Choose the matching Chinese vocabulary"></div>
+        <div id="typingPanel" class="typing-panel">
+            <div id="typedPinyin" class="typed-pinyin" aria-live="polite"></div>
+            <div id="letterKeyboard" class="letter-keyboard" aria-label="Pinyin letter keyboard"></div>
+        </div>
     </div>
     <div id="status" class="status" role="status" aria-live="polite"></div>
 </div>
@@ -866,10 +870,10 @@ function renderTypedPinyin() {
 function renderLetterKeyboard() {
     const rows = [
         { letters: 'QWERTY', startColumn: 1 },
-        { letters: 'UIOPAS', startColumn: 1 },
-        { letters: 'DFGHJK', startColumn: 1 },
-        { letters: 'LZXCVB', startColumn: 1 },
-        { letters: 'NM', startColumn: 3 }
+        { letters: 'UIOP', startColumn: 3 },
+        { letters: 'ASDFGH', startColumn: 1 },
+        { letters: 'JKLZXC', startColumn: 1 },
+        { letters: 'VBNM', startColumn: 3 }
     ];
 
     rows.forEach((row, rowIndex) => {
@@ -892,8 +896,10 @@ function setInputMode(typingMode) {
     isTypingMode = typingMode;
     elModeToggle.checked = typingMode;
     typedPinyin = '';
-    elChoices.hidden = isTypingMode;
-    elTypingPanel.hidden = !isTypingMode;
+    elChoices.classList.toggle('input-mode-inactive', isTypingMode);
+    elChoices.setAttribute('aria-hidden', isTypingMode);
+    elTypingPanel.classList.toggle('input-mode-inactive', !isTypingMode);
+    elTypingPanel.setAttribute('aria-hidden', !isTypingMode);
     elStatus.textContent = '';
     renderTypedPinyin();
 }
