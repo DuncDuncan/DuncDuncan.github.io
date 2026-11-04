@@ -285,9 +285,9 @@ body {
 
 .letter-keyboard {
     display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: clamp(3px, 0.8vh, 6px);
-    width: min(100%, 420px, max(180px, calc((100dvh - 240px) * 7 / 4)));
+    width: min(100%, 420px, max(180px, calc((100dvh - 220px) * 6 / 5)));
 }
 
 .letter-key {
@@ -865,10 +865,11 @@ function renderTypedPinyin() {
 
 function renderLetterKeyboard() {
     const rows = [
-        { letters: 'QWERTYU', startColumn: 1 },
-        { letters: 'IOPASDF', startColumn: 1 },
-        { letters: 'GHJKLZX', startColumn: 1 },
-        { letters: 'CVBNM', startColumn: 2 }
+        { letters: 'QWERTY', startColumn: 1 },
+        { letters: 'UIOPAS', startColumn: 1 },
+        { letters: 'DFGHJK', startColumn: 1 },
+        { letters: 'LZXCVB', startColumn: 1 },
+        { letters: 'NM', startColumn: 3 }
     ];
 
     rows.forEach((row, rowIndex) => {
