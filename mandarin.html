@@ -285,9 +285,9 @@ body {
 
 .letter-keyboard {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: clamp(3px, 0.8vh, 6px);
-    width: min(100%, 360px, max(180px, calc((100dvh - 220px) * 5 / 6)));
+    width: min(100%, 420px, max(180px, calc((100dvh - 240px) * 7 / 4)));
 }
 
 .letter-key {
@@ -311,40 +311,13 @@ body {
     background: #292714;
 }
 
-.letter-key:focus-visible,
-.typing-action:focus-visible {
+.letter-key:focus-visible {
     outline: 2px solid #ffd700;
     outline-offset: 2px;
 }
 
 .letter-key:disabled {
     cursor: default;
-}
-
-.letter-key.letter-z {
-    grid-column: 3;
-}
-
-.typing-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.typing-action {
-    min-width: 42px;
-    min-height: 32px;
-    border: 1px solid #444;
-    border-radius: 4px;
-    background: #202020;
-    color: #ccc;
-    cursor: pointer;
-    font: inherit;
-    font-size: 0.85rem;
-}
-
-.typing-action:hover {
-    border-color: #888;
-    color: white;
 }
 
 .choice {
@@ -486,7 +459,7 @@ body {
     }
 
     .letter-keyboard {
-        width: min(100%, 180px);
+        width: min(100%, 300px);
     }
 
     .letter-key {
@@ -565,10 +538,6 @@ a {
     <div id="typingPanel" class="typing-panel" hidden>
         <div id="typedPinyin" class="typed-pinyin" aria-live="polite"></div>
         <div id="letterKeyboard" class="letter-keyboard" aria-label="Pinyin letter keyboard"></div>
-        <div class="typing-actions">
-            <button id="backspaceKey" class="typing-action" type="button" aria-label="Delete last letter">⌫</button>
-            <button id="clearPinyin" class="typing-action" type="button">Clear</button>
-        </div>
     </div>
     <div id="status" class="status" role="status" aria-live="polite"></div>
 </div>
@@ -874,8 +843,6 @@ const elModeToggle = document.getElementById('modeToggle');
 const elTypingPanel = document.getElementById('typingPanel');
 const elTypedPinyin = document.getElementById('typedPinyin');
 const elLetterKeyboard = document.getElementById('letterKeyboard');
-const elBackspaceKey = document.getElementById('backspaceKey');
-const elClearPinyin = document.getElementById('clearPinyin');
 let isTypingMode = false;
 let preferredTypingMode = false;
 let isTypingLocked = false;
@@ -897,20 +864,26 @@ function renderTypedPinyin() {
 }
 
 function renderLetterKeyboard() {
-    const letters = Array.from({ length: 25 }, (_, index) => String.fromCharCode(65 + index));
-    letters.push('Z');
-    letters.forEach(letter => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'letter-key';
-        button.dataset.letter = letter;
-        button.textContent = letter;
-        button.setAttribute('aria-label', letter);
-        if (letter === 'Z') {
-            button.classList.add('letter-z');
-        }
-        button.addEventListener('click', () => enterPinyinLetter(letter, button));
-        elLetterKeyboard.appendChild(button);
+    const rows = [
+        { letters: 'QWERTYU', startColumn: 1 },
+        { letters: 'IOPASDF', startColumn: 1 },
+        { letters: 'GHJKLZX', startColumn: 1 },
+        { letters: 'CVBNM', startColumn: 2 }
+    ];
+
+    rows.forEach((row, rowIndex) => {
+        Array.from(row.letters).forEach((letter, letterIndex) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'letter-key';
+            button.dataset.letter = letter;
+            button.textContent = letter;
+            button.setAttribute('aria-label', letter);
+            button.style.gridRow = String(rowIndex + 1);
+            button.style.gridColumn = String(row.startColumn + letterIndex);
+            button.addEventListener('click', () => enterPinyinLetter(letter, button));
+            elLetterKeyboard.appendChild(button);
+        });
     });
 }
 
@@ -927,15 +900,6 @@ function setInputMode(typingMode) {
 function updateInputMode() {
     preferredTypingMode = elModeToggle.checked;
     setInputMode(preferredTypingMode);
-}
-
-function editTypedPinyin(action) {
-    if (!isTypingMode || isTypingLocked) {
-        return;
-    }
-    typedPinyin = action === 'backspace' ? typedPinyin.slice(0, -1) : '';
-    elStatus.textContent = '';
-    renderTypedPinyin();
 }
 
 function enterPinyinLetter(letter, button) {
@@ -1112,8 +1076,6 @@ function updateCard() {
 }
 
 elModeToggle.addEventListener('change', updateInputMode);
-elBackspaceKey.addEventListener('click', () => editTypedPinyin('backspace'));
-elClearPinyin.addEventListener('click', () => editTypedPinyin('clear'));
 
 function flashAnswer(button, result) {
     const previousTimer = answerFlashTimers.get(button);
