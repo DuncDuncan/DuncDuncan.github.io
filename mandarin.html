@@ -84,7 +84,7 @@ body {
     z-index: 1;
     display: grid;
     gap: 5px;
-    width: 92px;
+    width: 104px;
     color: #aaa;
     font-size: 0.75rem;
     text-align: left;
@@ -123,9 +123,13 @@ body {
 }
 
 .practice-stats div {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
     gap: 4px;
+}
+
+.practice-stats span {
+    white-space: nowrap;
 }
 
 .practice-stats strong {
@@ -230,8 +234,35 @@ body {
 }
 
 .choice.correct {
-    border-color: #69c779;
-    background: #18301d;
+    animation: answer-correct 900ms ease-in-out;
+}
+
+.choice.wrong {
+    animation: answer-wrong 900ms ease-in-out;
+}
+
+@keyframes answer-correct {
+    0%, 100% {
+        border-color: #444;
+        background: #202020;
+    }
+
+    20%, 60% {
+        border-color: #69c779;
+        background: #24502b;
+    }
+}
+
+@keyframes answer-wrong {
+    0%, 100% {
+        border-color: #444;
+        background: #202020;
+    }
+
+    20%, 60% {
+        border-color: #ed6262;
+        background: #572525;
+    }
 }
 
 .choice-chinese,
@@ -408,6 +439,7 @@ const vocabularyItems = [
     { english: "Coffee", emoji: "☕", chinese: "咖啡", pinyin: "kā fēi", phonetic: "kah fay" },
     { english: "Juice", emoji: "🧃", chinese: "果汁", pinyin: "guǒ zhī", phonetic: "gwor jir" },
     { english: "Beer", emoji: "🍺", chinese: "啤酒", pinyin: "pí jiǔ", phonetic: "pee jyoh" },
+    { english: "Wine", emoji: "🍷", chinese: "葡萄酒", pinyin: "pú táo jiǔ", phonetic: "poo taow jyoh" },
     { english: "Dog", emoji: "🐶", chinese: "狗", pinyin: "gǒu", phonetic: "goh" },
     { english: "Cat", emoji: "🐱", chinese: "猫", pinyin: "māo", phonetic: "maow" },
     { english: "Monkey", emoji: "🐒", chinese: "猴子", pinyin: "hóu zi", phonetic: "hoh dzuh" },
@@ -657,6 +689,7 @@ function chooseNextItem(previousItem) {
 let currentItem = chooseNextItem();
 let questionStartedAt = 0;
 let currentRoundMisses = 0;
+const answerFlashTimers = new WeakMap();
 
 const elEmojiDisplay = document.getElementById('emojiDisplay');
 const elEnglishLabel = document.getElementById('englishLabel');
@@ -784,6 +817,24 @@ function updateCard() {
     });
 }
 
+function flashAnswer(button, result) {
+    const previousTimer = answerFlashTimers.get(button);
+    if (previousTimer) {
+        window.clearTimeout(previousTimer);
+    }
+
+    button.classList.remove('correct', 'wrong');
+    void button.offsetWidth;
+    button.classList.add(result);
+    const animationDuration = getComputedStyle(button).animationDuration.split(',')[0];
+    const durationMs = Number.parseFloat(animationDuration) * (animationDuration.endsWith('ms') ? 1 : 1000);
+    const timer = window.setTimeout(() => {
+        button.classList.remove(result);
+        answerFlashTimers.delete(button);
+    }, durationMs);
+    answerFlashTimers.set(button, timer);
+}
+
 elEmojiDisplay.addEventListener('click', () => {
     elEnglishLabel.classList.add('is-visible');
     elEmojiDisplay.setAttribute('aria-expanded', 'true');
@@ -792,6 +843,7 @@ elEmojiDisplay.addEventListener('click', () => {
 function selectAnswer(button, selectedItem, questionItem) {
     if (selectedItem !== questionItem) {
         currentRoundMisses += 1;
+        flashAnswer(button, 'wrong');
         updatePracticeStats(questionItem);
         elStatus.textContent = `Try again. Missed ${currentRoundMisses} time(s) this round.`;
         return;
@@ -802,7 +854,7 @@ function selectAnswer(button, selectedItem, questionItem) {
     recordAnswerTime(questionItem, performance.now() - questionStartedAt);
     updatePracticeStats(questionItem);
     elStatus.textContent = 'Correct';
-    button.classList.add('correct');
+    flashAnswer(button, 'correct');
     elChoices.querySelectorAll('button').forEach(choice => {
         choice.disabled = true;
     });
