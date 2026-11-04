@@ -91,6 +91,37 @@ body {
     pointer-events: none;
 }
 
+.category-filters {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    display: flex;
+    gap: 4px;
+}
+
+.category-toggle {
+    padding: 6px 8px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    background: #202020;
+    color: #aaa;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.75rem;
+}
+
+.category-toggle[aria-pressed="true"] {
+    border-color: #ffd700;
+    background: #292714;
+    color: #ffd700;
+}
+
+.category-toggle:focus-visible {
+    outline: 2px solid #ffd700;
+    outline-offset: 2px;
+}
+
 .practice-stats div {
     display: flex;
     justify-content: space-between;
@@ -323,6 +354,12 @@ a {
     <div><span>Avg time</span><strong id="averageTime">-</strong></div>
 </aside>
 
+<nav class="category-filters" aria-label="Vocabulary categories">
+    <button class="category-toggle" type="button" data-category="food" aria-pressed="true">食物</button>
+    <button class="category-toggle" type="button" data-category="travel" aria-pressed="true">旅行</button>
+    <button class="category-toggle" type="button" data-category="numbers" aria-pressed="true">数字</button>
+</nav>
+
 <div class="card">
     <div class="emoji-zone">
         <button id="emojiDisplay" class="emoji-display" type="button" aria-label="Reveal the English word" aria-expanded="false"></button>
@@ -333,11 +370,19 @@ a {
 </div>
 
 <section class="ranking-section" aria-labelledby="rankingHeading">
-    <h2 id="rankingHeading">Items by practice weight</h2>
+    <h2 id="rankingHeading">Items by appearances</h2>
     <ul id="weightRanking" class="weight-ranking"></ul>
 </section>
 
 <script>
+const travelVocabulary = new Set([
+    "Bus", "Train", "Hotel", "Taxi", "Scooter", "Airplane", "Airport", "Passport", "Ticket", "Map",
+    "Suitcase", "Station", "Subway", "Bus Stop", "Restaurant", "Bathroom", "Phone", "Money", "Bicycle",
+    "Entrance", "Exit", "Beach", "Mountain"
+]);
+const numberVocabulary = new Set(["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"]);
+const categoryOrder = ["food", "travel", "numbers"];
+
 const vocabularyItems = [
     { english: "Apple", emoji: "🍎", chinese: "苹果", pinyin: "píng guǒ", phonetic: "peeng gwor" },
     { english: "Pork", emoji: "🐷", chinese: "猪肉", pinyin: "zhū ròu", phonetic: "joo roh" },
@@ -365,6 +410,17 @@ const vocabularyItems = [
     { english: "Beer", emoji: "🍺", chinese: "啤酒", pinyin: "pí jiǔ", phonetic: "pee jyoh" },
     { english: "Dog", emoji: "🐶", chinese: "狗", pinyin: "gǒu", phonetic: "goh" },
     { english: "Cat", emoji: "🐱", chinese: "猫", pinyin: "māo", phonetic: "maow" },
+    { english: "Monkey", emoji: "🐒", chinese: "猴子", pinyin: "hóu zi", phonetic: "hoh dzuh" },
+    { english: "Horse", emoji: "🐴", chinese: "马", pinyin: "mǎ", phonetic: "mah" },
+    { english: "Panda", emoji: "🐼", chinese: "熊猫", pinyin: "xióng māo", phonetic: "shyong maow" },
+    { english: "Tiger", emoji: "🐅", chinese: "老虎", pinyin: "lǎo hǔ", phonetic: "laow hoo" },
+    { english: "Lion", emoji: "🦁", chinese: "狮子", pinyin: "shī zi", phonetic: "shir dzuh" },
+    { english: "Camel", emoji: "🐫", chinese: "骆驼", pinyin: "luò tuo", phonetic: "lwaw twaw" },
+    { english: "Yak", emoji: "🐂", chinese: "牦牛", pinyin: "máo niú", phonetic: "maow nyoh" },
+    { english: "Elephant", emoji: "🐘", chinese: "大象", pinyin: "dà xiàng", phonetic: "dah shyahng" },
+    { english: "Rabbit", emoji: "🐇", chinese: "兔子", pinyin: "tù zi", phonetic: "too dzuh" },
+    { english: "Sheep", emoji: "🐑", chinese: "羊", pinyin: "yáng", phonetic: "yahng" },
+    { english: "Peacock", emoji: "🦚", chinese: "孔雀", pinyin: "kǒng què", phonetic: "kong chyweh" },
     { english: "Chili", emoji: "🌶️", chinese: "辣椒", pinyin: "là jiāo", phonetic: "lah jyaow" }, // New addition
     { english: "Shrimp", emoji: "🍤", chinese: "虾", pinyin: "xiā", phonetic: "shyah" },
     { english: "Orange", emoji: "🍊", chinese: "橙子", pinyin: "chéng zi", phonetic: "chuhng dzuh" },
@@ -405,13 +461,45 @@ const vocabularyItems = [
     { english: "Entrance", emoji: "🚪", chinese: "入口", pinyin: "rù kǒu", phonetic: "roo koh" },
     { english: "Exit", emoji: "➡️", chinese: "出口", pinyin: "chū kǒu", phonetic: "choo koh" },
     { english: "Beach", emoji: "🏖️", chinese: "海滩", pinyin: "hǎi tān", phonetic: "hi tan" },
-    { english: "Mountain", emoji: "⛰️", chinese: "山", pinyin: "shān", phonetic: "shan" }
-];
+    { english: "Mountain", emoji: "⛰️", chinese: "山", pinyin: "shān", phonetic: "shan" },
+    { english: "Zero", emoji: "0️⃣", chinese: "零", pinyin: "líng", phonetic: "ling" },
+    { english: "One", emoji: "1️⃣", chinese: "一", pinyin: "yī", phonetic: "ee" },
+    { english: "Two", emoji: "2️⃣", chinese: "二", pinyin: "èr", phonetic: "er" },
+    { english: "Three", emoji: "3️⃣", chinese: "三", pinyin: "sān", phonetic: "san" },
+    { english: "Four", emoji: "4️⃣", chinese: "四", pinyin: "sì", phonetic: "suh" },
+    { english: "Five", emoji: "5️⃣", chinese: "五", pinyin: "wǔ", phonetic: "woo" },
+    { english: "Six", emoji: "6️⃣", chinese: "六", pinyin: "liù", phonetic: "lyoh" },
+    { english: "Seven", emoji: "7️⃣", chinese: "七", pinyin: "qī", phonetic: "chee" },
+    { english: "Eight", emoji: "8️⃣", chinese: "八", pinyin: "bā", phonetic: "bah" },
+    { english: "Nine", emoji: "9️⃣", chinese: "九", pinyin: "jiǔ", phonetic: "jyoh" },
+    { english: "Ten", emoji: "🔟", chinese: "十", pinyin: "shí", phonetic: "shir" }
+].map(item => ({
+    ...item,
+    category: numberVocabulary.has(item.english) ? "numbers" : travelVocabulary.has(item.english) ? "travel" : "food"
+}));
 
 const missHistoryStorageKey = 'mandarin-food-miss-history';
 const answerTimeStorageKey = 'mandarin-food-answer-times';
+const categoryStorageKey = 'mandarin-vocabulary-categories';
 const maxTrackedAnswerTimeMs = 60000;
-const newItemSeedWeights = [10000, 1000, 100, 10, 1];
+
+function loadSelectedCategories() {
+    try {
+        const savedCategories = JSON.parse(localStorage.getItem(categoryStorageKey) || '{}');
+        return Object.fromEntries(categoryOrder.map(category => [
+            category,
+            typeof savedCategories[category] === 'boolean' ? savedCategories[category] : true
+        ]));
+    } catch {
+        return Object.fromEntries(categoryOrder.map(category => [category, true]));
+    }
+}
+
+const selectedCategories = loadSelectedCategories();
+
+function getAvailableItems() {
+    return vocabularyItems.filter(item => selectedCategories[item.category]);
+}
 
 function shuffleDeck(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -506,33 +594,30 @@ function getItemWeightDetails(item) {
     const misses = getRecentMissCount(item);
     const answerTime = answerTimes[item.english];
     const averageMs = Math.min(answerTime.averageMs, maxTrackedAnswerTimeMs);
-    const appearances = Math.max(recentMissHistory[item.english].length, answerTime.samples);
+    const appearances = answerTime.durations.length;
     const missFactor = 1 + misses;
     const timeFactor = 1 + averageMs / 5000;
-    const seedFactor = newItemSeedWeights[appearances] ?? 1;
-    const weightBeforeBoost = missFactor * timeFactor;
-    const weight = weightBeforeBoost * seedFactor;
+    const weight = missFactor * timeFactor;
     return {
         misses,
+        appearances,
         recentAnswerTimesSeconds: answerTime.durations.map(duration => Number((duration / 1000).toFixed(2))),
         averageAnswerTimeSeconds: Number((averageMs / 1000).toFixed(2)),
         missFactor,
         timeFactor: Number(timeFactor.toFixed(3)),
-        seedFactor,
-        weightBeforeBoost,
         weight
     };
 }
 
 function logItemSelection(selection, totalWeight) {
     const selectionChancePercent = (selection.weight / totalWeight * 100).toFixed(2);
-    console.log(`selectionChancePercent=${selectionChancePercent}%, misses=${selection.misses}, recentAnswerTimesSeconds=[${selection.recentAnswerTimesSeconds.join(', ')}], weight=${selection.weightBeforeBoost.toFixed(3)}, seedFactor=${selection.seedFactor}, boostedWeight=${selection.weight.toFixed(3)}`);
+    console.log(`selectionChancePercent=${selectionChancePercent}%, appearances=${selection.appearances}/10, misses=${selection.misses}, recentAnswerTimesSeconds=[${selection.recentAnswerTimesSeconds.join(', ')}], weight=${selection.weight.toFixed(3)}`);
 }
 
 function renderWeightRanking() {
-    const ranking = vocabularyItems
-        .map(item => ({ english: item.english, weight: getItemWeightDetails(item).weight }))
-        .sort((first, second) => second.weight - first.weight);
+    const ranking = getAvailableItems()
+        .map(item => ({ english: item.english, ...getItemWeightDetails(item) }))
+        .sort((first, second) => first.appearances - second.appearances || second.weight - first.weight);
     const rankingList = document.getElementById('weightRanking');
     rankingList.replaceChildren(...ranking.map(item => {
         const row = document.createElement('li');
@@ -540,15 +625,19 @@ function renderWeightRanking() {
         const weight = document.createElement('span');
         name.textContent = item.english;
         weight.className = 'ranking-weight';
-        weight.textContent = item.weight.toFixed(3);
+        weight.textContent = `${item.appearances}/10 · ${item.weight.toFixed(3)}`;
         row.append(name, weight);
         return row;
     }));
 }
 
 function chooseNextItem(previousItem) {
-    const candidates = vocabularyItems.filter(item => item !== previousItem);
-    const weightedCandidates = candidates.map(item => ({ item, ...getItemWeightDetails(item) }));
+    const availableItems = getAvailableItems();
+    const candidates = availableItems.filter(item => item !== previousItem);
+    const leastAppearances = Math.min(...candidates.map(item => answerTimes[item.english].durations.length));
+    const weightedCandidates = candidates
+        .filter(item => answerTimes[item.english].durations.length === leastAppearances)
+        .map(item => ({ item, ...getItemWeightDetails(item) }));
     const totalWeight = weightedCandidates.reduce((total, selection) => total + selection.weight, 0);
     let randomWeight = Math.random() * totalWeight;
 
@@ -575,6 +664,39 @@ const elChoices = document.getElementById('choices');
 const elStatus = document.getElementById('status');
 const elMissCount = document.getElementById('missCount');
 const elAverageTime = document.getElementById('averageTime');
+
+function saveSelectedCategories() {
+    try {
+        localStorage.setItem(categoryStorageKey, JSON.stringify(selectedCategories));
+    } catch {}
+}
+
+function renderCategoryFilters() {
+    document.querySelectorAll('.category-toggle').forEach(button => {
+        button.setAttribute('aria-pressed', selectedCategories[button.dataset.category]);
+    });
+}
+
+function toggleCategory(category) {
+    const activeCount = categoryOrder.filter(name => selectedCategories[name]).length;
+    if (selectedCategories[category] && activeCount === 1) {
+        elStatus.textContent = 'Keep at least one category selected.';
+        return;
+    }
+
+    selectedCategories[category] = !selectedCategories[category];
+    saveSelectedCategories();
+    renderCategoryFilters();
+
+    if (!getAvailableItems().includes(currentItem)) {
+        currentItem = chooseNextItem();
+    }
+    updateCard();
+}
+
+document.querySelectorAll('.category-toggle').forEach(button => {
+    button.addEventListener('click', () => toggleCategory(button.dataset.category));
+});
 
 function updatePracticeStats(item) {
     const answerTime = answerTimes[item.english];
@@ -644,7 +766,7 @@ function updateCard() {
     elStatus.textContent = '';
     elChoices.replaceChildren();
 
-    const distractors = vocabularyItems.filter(item => item !== questionItem);
+    const distractors = getAvailableItems().filter(item => item !== questionItem);
     shuffleDeck(distractors);
     const choices = [questionItem, ...distractors.slice(0, 8)];
     shuffleDeck(choices);
@@ -691,6 +813,7 @@ function selectAnswer(button, selectedItem, questionItem) {
     });
 }
 
+renderCategoryFilters();
 updateCard();
 </script>
 
