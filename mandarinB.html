@@ -26,15 +26,17 @@ body {
 .card {
     box-sizing: border-box;
     width: min(760px, 100%);
-    flex: 0 0 auto;
+    flex: 1 0 auto;
     height: 100vh;
     height: 100dvh;
     min-height: 100vh;
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end; /* Pushes content down towards the bottom input area */
-    padding: clamp(8px, 2.5vh, 30px) 18px clamp(20px, 4vh, 40px); /* Gives buffer room at base */
+    justify-content: center;
+    align-items: center;
+    padding: clamp(8px, 2.5vh, 30px) 18px;
+    position: relative;
 }
 
 .ranking-section {
@@ -66,11 +68,31 @@ body {
 .weight-ranking li {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     gap: 16px;
     padding: 8px 0;
     border-bottom: 1px solid #292929;
     color: #ccc;
     font-size: 0.9rem;
+}
+
+.weight-ranking li.item-disabled {
+    opacity: 0.35;
+    text-decoration: line-through;
+}
+
+.ranking-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ranking-toggle-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0 4px;
 }
 
 .ranking-weight {
@@ -79,13 +101,13 @@ body {
 }
 
 .practice-stats {
-    position: fixed;
+    position: absolute;
     top: 44px;
     left: 12px;
     z-index: 1;
     display: grid;
     gap: 5px;
-    width: 220px;
+    width: 240px;
     color: #aaa;
     font-size: 0.75rem;
     text-align: left;
@@ -93,7 +115,7 @@ body {
 }
 
 .mode-switch {
-    position: fixed;
+    position: absolute;
     top: 12px;
     left: 12px;
     z-index: 2;
@@ -146,7 +168,7 @@ body {
 }
 
 .category-filters {
-    position: fixed;
+    position: absolute;
     top: 12px;
     right: 12px;
     z-index: 2;
@@ -191,17 +213,16 @@ body {
     color: #ffd700;
     font-variant-numeric: tabular-nums;
     display: flex;
-    gap: 4px;
+    gap: 6px;
 }
 
 .emoji-zone {
-    flex: 0 1 auto;
-    min-height: 0;
+    flex: 1 1 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-end; /* Floats it right against the bottom input area */
-    margin-bottom: clamp(10px, 2vh, 25px); /* Tight clean margin directly above spelled out pinyin */
+    justify-content: center;
+    width: 100%;
 }
 
 .emoji-display {
@@ -250,6 +271,7 @@ body {
     align-items: center;
     justify-items: center;
     width: 100%;
+    margin-top: clamp(8px, 1.5vh, 16px);
 }
 
 .input-area > * {
@@ -265,7 +287,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     width: 100%;
 }
 
@@ -407,10 +429,6 @@ body {
 }
 
 @media (max-width: 520px) {
-    .card {
-        padding-right: 10px;
-        padding-left: 10px;
-    }
     .emoji-display {
         font-size: 7rem;
     }
@@ -429,10 +447,6 @@ body {
 }
 
 @media (max-height: 480px) {
-    .card {
-        padding-top: 6px;
-        padding-bottom: 6px;
-    }
     .choice {
         padding: 2px 1px;
     }
@@ -480,29 +494,30 @@ button, input, select, textarea, a {
 </head>
 <body>
 
-<aside class="practice-stats" aria-label="Current vocabulary practice statistics">
-    <div><span>Recent misses</span><strong id="missCount">0</strong></div>
-    <div><span>Avg time</span><strong id="averageTime">-</strong></div>
-    <div><span>Score</span><strong id="itemScore">-</strong></div>
-</aside>
-
-<label class="mode-switch">
-    <span>Choice</span>
-    <input id="modeToggle" type="checkbox" role="switch" aria-label="Use pinyin typing mode">
-    <span>Pinyin</span>
-</label>
-
-<nav class="category-filters" aria-label="Vocabulary categories">
-    <button class="category-toggle" type="button" data-category="food" aria-pressed="true">食物</button>
-    <button class="category-toggle" type="button" data-category="travel" aria-pressed="true">旅行</button>
-    <button class="category-toggle" type="button" data-category="numbers" aria-pressed="true">数字</button>
-</nav>
-
 <div class="card">
+    <aside class="practice-stats" aria-label="Current vocabulary practice statistics">
+        <div><span>Recent misses</span><strong id="missCount">0</strong></div>
+        <div><span>Avg time</span><strong id="averageTime">-</strong></div>
+        <div><span>Score</span><strong id="itemScore">-</strong></div>
+    </aside>
+
+    <label class="mode-switch">
+        <span>Choice</span>
+        <input id="modeToggle" type="checkbox" role="switch" aria-label="Use pinyin typing mode" checked>
+        <span>Pinyin</span>
+    </label>
+
+    <nav class="category-filters" aria-label="Vocabulary categories">
+        <button class="category-toggle" type="button" data-category="food" aria-pressed="true">食物</button>
+        <button class="category-toggle" type="button" data-category="travel" aria-pressed="true">旅行</button>
+        <button class="category-toggle" type="button" data-category="numbers" aria-pressed="true">数字</button>
+    </nav>
+
     <div class="emoji-zone">
         <button id="emojiDisplay" class="emoji-display" type="button" aria-label="Reveal the English word" aria-expanded="false"></button>
         <div id="englishLabel" class="english-label" aria-live="polite"></div>
     </div>
+    
     <div class="input-area">
         <div id="choices" class="choices" aria-label="Choose the matching Chinese vocabulary"></div>
         <div id="typingPanel" class="typing-panel">
@@ -596,7 +611,7 @@ const vocabularyItems = [
     { english: "Map", emoji: "🗺️", chinese: "地图", pinyin: "dì tú", phonetic: "dee too" },
     { english: "Suitcase", emoji: "🧳", chinese: "行李箱", pinyin: "xíng li xiāng", phonetic: "shing lee shyahng" },
     { english: "Station", emoji: "🚉", chinese: "车站", pinyin: "chē zhàn", phonetic: "chuh jan" },
-    { english: "Subway", emoji: "🚇", chinese: "地铁", pinyin: "dì tiě", pinyin: "dee tyeh" },
+    { english: "Subway", emoji: "🚇", chinese: "地铁", pinyin: "dì tiě", phonetic: "dee tyeh" },
     { english: "Bus Stop", emoji: "🚏", chinese: "公交站", pinyin: "gōng jiāo zhàn", phonetic: "goong jyaow jan" },
     { english: "Restaurant", emoji: "🍽️", chinese: "餐厅", pinyin: "cān tīng", phonetic: "tsan ting" },
     { english: "Bathroom", emoji: "🚻", chinese: "洗手间", pinyin: "xǐ shǒu jiān", phonetic: "shee show jyen" },
@@ -626,7 +641,7 @@ const vocabularyItems = [
 const missHistoryStorageKey = 'mandarin-food-miss-history';
 const answerTimeStorageKey = 'mandarin-food-answer-times';
 const categoryStorageKey = 'mandarin-vocabulary-categories';
-const itemToggleStorageKey = 'mandarin-vocabulary-item-toggles';
+const exclusionStorageKey = 'mandarin-vocabulary-exclusions';
 const maxTrackedAnswerTimeMs = 60000;
 
 function loadSelectedCategories() {
@@ -641,24 +656,19 @@ function loadSelectedCategories() {
     }
 }
 
-const selectedCategories = loadSelectedCategories();
-
-function loadItemToggles() {
+function loadExclusions() {
     try {
-        const saved = JSON.parse(localStorage.getItem(itemToggleStorageKey) || '{}');
-        return Object.fromEntries(vocabularyItems.map(item => [
-            item.english,
-            typeof saved[item.english] === 'boolean' ? saved[item.english] : true
-        ]));
+        return JSON.parse(localStorage.getItem(exclusionStorageKey) || '{}');
     } catch {
-        return Object.fromEntries(vocabularyItems.map(item => [item.english, true]));
+        return {};
     }
 }
 
-const itemToggles = loadItemToggles();
+const selectedCategories = loadSelectedCategories();
+const itemExclusions = loadExclusions();
 
 function getAvailableItems() {
-    return vocabularyItems.filter(item => selectedCategories[item.category] && itemToggles[item.english]);
+    return vocabularyItems.filter(item => selectedCategories[item.category] && !itemExclusions[item.english]);
 }
 
 function shuffleDeck(array) {
@@ -778,84 +788,77 @@ function getItemWeightDetails(item) {
     };
 }
 
-function saveItemToggles() {
-    try {
-        localStorage.setItem(itemToggleStorageKey, JSON.stringify(itemToggles));
-    } catch {}
-}
-
 function renderWeightRanking() {
     const rankingList = document.getElementById('weightRanking');
     rankingList.replaceChildren();
 
-    vocabularyItems.forEach(item => {
-        const details = getItemWeightDetails(item);
-        const row = document.createElement('li');
-        row.style.display = 'flex';
-        row.style.alignItems = 'center';
-        row.style.justifyContent = 'space-between';
-        row.style.gap = '12px';
-        row.style.padding = '8px 0';
-        row.style.borderBottom = '1px solid #292929';
-        
-        if (!itemToggles[item.english]) {
-            row.style.opacity = '0.35';
-            row.style.textDecoration = 'line-through';
-        }
+    vocabularyItems
+        .filter(item => selectedCategories[item.category])
+        .map(item => ({ item, ...getItemWeightDetails(item) }))
+        .sort((first, second) => first.appearances - second.appearances || second.weight - first.weight)
+        .forEach(({ item, appearances, averageAnswerTimeSeconds, score }) => {
+            const isExcluded = !!itemExclusions[item.english];
+            const row = document.createElement('li');
+            if (isExcluded) row.className = 'item-disabled';
 
-        const leftBlock = document.createElement('div');
-        leftBlock.style.display = 'flex';
-        leftBlock.style.alignItems = 'center';
-        leftBlock.style.gap = '10px';
+            const leftDiv = document.createElement('div');
+            leftDiv.className = 'ranking-left';
 
-        const toggleBtn = document.createElement('button');
-        toggleBtn.type = 'button';
-        toggleBtn.style.background = 'transparent';
-        toggleBtn.style.border = 'none';
-        toggleBtn.style.cursor = 'pointer';
-        toggleBtn.style.fontSize = '1rem';
-        toggleBtn.style.padding = '0';
-        toggleBtn.textContent = itemToggles[item.english] ? '🟢' : '🔴';
-        toggleBtn.addEventListener('click', () => {
-            const totalActive = Object.values(itemToggles).filter(Boolean).length;
-            if (itemToggles[item.english] && totalActive === 1) {
-                elStatus.textContent = 'Keep at least one vocabulary item active.';
-                return;
-            }
-            itemToggles[item.english] = !itemToggles[item.english];
-            saveItemToggles();
-            renderWeightRanking();
-            if (!itemToggles[currentItem.english] || !selectedCategories[currentItem.category]) {
-                currentItem = chooseNextItem();
-                updateCard();
-            } else {
-                updatePracticeStats(currentItem);
-            }
+            const toggleBtn = document.createElement('button');
+            toggleBtn.type = 'button';
+            toggleBtn.className = 'ranking-toggle-btn';
+            toggleBtn.textContent = isExcluded ? '🔴' : '🟢';
+            toggleBtn.addEventListener('click', () => toggleItemVisibility(item.english));
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = item.english;
+
+            leftDiv.append(toggleBtn, nameSpan);
+
+            const weightSpan = document.createElement('span');
+            weightSpan.className = 'ranking-weight';
+            
+            const timeStr = appearances > 0 ? `${averageAnswerTimeSeconds}s` : '-';
+            weightSpan.textContent = `${timeStr} · ${appearances}/10 · Sc: ${score}`;
+
+            row.append(leftDiv, weightSpan);
+            rankingList.appendChild(row);
         });
+}
 
-        const nameSpan = document.createElement('span');
-        nameSpan.textContent = `${item.emoji} ${item.english}`;
-        nameSpan.style.color = '#ccc';
-        nameSpan.style.fontSize = '0.9rem';
+function toggleItemVisibility(englishName) {
+    const matchingItemsInActiveCats = vocabularyItems.filter(item => selectedCategories[item.category]);
+    const activeCount = matchingItemsInActiveCats.filter(item => !itemExclusions[item.english]).length;
 
-        leftBlock.append(toggleBtn, nameSpan);
+    if (!itemExclusions[englishName] && activeCount === 1) {
+        document.getElementById('status').textContent = 'Keep at least one item unmuted in active categories.';
+        return;
+    }
 
-        const statsSpan = document.createElement('span');
-        statsSpan.className = 'ranking-weight';
-        const timeStr = details.appearances > 0 ? `${details.averageAnswerTimeSeconds}s` : '-';
-        statsSpan.textContent = `${timeStr} · ${details.appearances}/10 · Sc: ${details.score}`;
+    if (itemExclusions[englishName]) {
+        delete itemExclusions[englishName];
+    } else {
+        itemExclusions[englishName] = true;
+    }
 
-        row.append(leftBlock, statsSpan);
-        rankingList.appendChild(row);
-    });
+    try {
+        localStorage.setItem(exclusionStorageKey, JSON.stringify(itemExclusions));
+    } catch {}
+
+    renderWeightRanking();
+
+    if (!getAvailableItems().includes(currentItem)) {
+        currentItem = chooseNextItem();
+        updateCard();
+    } else {
+        updatePracticeStats(currentItem);
+    }
 }
 
 function chooseNextItem(previousItem) {
     const availableItems = getAvailableItems();
-    if (availableItems.length === 0) {
-        // Fallback safety layer
-        return vocabularyItems[0];
-    }
+    if (availableItems.length === 0) return vocabularyItems[0];
+    
     const candidates = availableItems.filter(item => item !== previousItem);
     const targetPool = candidates.length > 0 ? candidates : availableItems;
     
@@ -876,7 +879,10 @@ function chooseNextItem(previousItem) {
     return weightedCandidates[weightedCandidates.length - 1].item;
 }
 
-let currentItem = chooseNextItem();
+let preferredTypingMode = true;
+let isTypingMode = true;
+let isTypingLocked = false;
+let typedPinyin = '';
 let questionStartedAt = 0;
 let currentRoundMisses = 0;
 const answerFlashTimers = new WeakMap();
@@ -892,10 +898,8 @@ const elModeToggle = document.getElementById('modeToggle');
 const elTypingPanel = document.getElementById('typingPanel');
 const elTypedPinyin = document.getElementById('typedPinyin');
 const elLetterKeyboard = document.getElementById('letterKeyboard');
-let isTypingMode = true;
-let preferredTypingMode = true;
-let isTypingLocked = false;
-let typedPinyin = '';
+
+let currentItem = chooseNextItem();
 
 function normalizePinyin(value) {
     return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s/g, '');
@@ -1036,17 +1040,15 @@ document.querySelectorAll('.category-toggle').forEach(button => {
 
 function updatePracticeStats(item) {
     const details = getItemWeightDetails(item);
-    const history = recentMissHistory[item.english] || [];
+    const history = recentMissHistory[item.english] ? [...recentMissHistory[item.english]] : [];
     
-    elMissCount.replaceChildren();
-    
-    const augmentedHistory = [...history];
     if (item === currentItem && currentRoundMisses > 0) {
-        augmentedHistory.push(currentRoundMisses);
-        if (augmentedHistory.length > 10) augmentedHistory.shift();
+        history.push(currentRoundMisses);
+        if (history.length > 10) history.shift();
     }
     
-    const reversedHistory = [...augmentedHistory].reverse();
+    elMissCount.replaceChildren();
+    const reversedHistory = [...history].reverse();
     let displayFactor = 1.0;
     
     if (reversedHistory.length === 0) {
@@ -1127,7 +1129,10 @@ function updateCard() {
     elStatus.textContent = '';
     elChoices.replaceChildren();
 
-    const distractors = getAvailableItems().filter(item => item !== questionItem);
+    const availablePool = getAvailableItems();
+    if (availablePool.length === 0) return;
+
+    const distractors = availablePool.filter(item => item !== questionItem);
     shuffleDeck(distractors);
     const choices = [questionItem, ...distractors.slice(0, 8)];
     shuffleDeck(choices);
@@ -1180,11 +1185,6 @@ function selectAnswer(button, selectedItem, questionItem) {
     isTypingLocked = true;
     setTimeout(() => completeAnswer(questionItem), 300);
 }
-
-// Initial initialization default forcing
-elModeToggle.checked = true;
-isTypingMode = true;
-preferredTypingMode = true;
 
 renderCategoryFilters();
 renderLetterKeyboard();
