@@ -95,8 +95,11 @@ body {
     padding: 4px 8px;
     user-select: none;
 }
-.exclude-toggle-btn:hover {
-    border-color: #ffd700;
+
+@media (hover: hover) {
+    .exclude-toggle-btn:hover {
+        border-color: #ffd700;
+    }
 }
 
 .ranking-weight {
@@ -324,9 +327,11 @@ body {
     text-transform: uppercase;
 }
 
-.letter-key:hover:not(:disabled) {
-    border-color: #ffd700;
-    background: #292714;
+@media (hover: hover) {
+    .letter-key:hover:not(:disabled) {
+        border-color: #ffd700;
+        background: #292714;
+    }
 }
 
 .letter-key:focus-visible {
@@ -359,9 +364,11 @@ body {
     font: inherit;
 }
 
-.choice:hover:not(:disabled) {
-    border-color: #ffd700;
-    background: #292714;
+@media (hover: hover) {
+    .choice:hover:not(:disabled) {
+        border-color: #ffd700;
+        background: #292714;
+    }
 }
 
 .choice:focus-visible {
@@ -514,7 +521,7 @@ button, input, select, textarea, a {
 
 <label class="mode-switch">
     <span>Choice</span>
-    <input id="modeToggle" type="checkbox" role="switch" aria-label="Use pinyin typing mode" checked>
+    <input id="modeToggle" type="checkbox" role="switch" aria-label="Use pinyin typing mode">
     <span>Pinyin</span>
 </label>
 
@@ -987,7 +994,7 @@ function enterPinyinLetter(letter, button) {
         isTypingLocked = true;
         const penalty = Math.max(1, 6 - typedPinyin.length);
         currentRoundMisses += penalty;
-        updateLiveStatsDisplay();
+        updatePracticeStats(currentItem);
         flashAnswer(button, 'wrong');
         elStatus.textContent = `Pinyin incorrect (+${penalty} Misses). Switching to Choice...`;
         
@@ -1048,29 +1055,6 @@ document.querySelectorAll('.category-toggle').forEach(button => {
     button.addEventListener('click', () => toggleCategory(button.dataset.category));
 });
 
-function updateLiveStatsDisplay() {
-    const history = recentMissHistory[currentItem.english] || [];
-    elMissCount.replaceChildren();
-
-    const activeSpan = document.createElement('span');
-    activeSpan.textContent = `${currentRoundMisses} (now)`;
-    activeSpan.style.color = '#ff6b6b';
-    activeSpan.style.fontWeight = 'bold';
-    activeSpan.style.marginRight = '12px';
-    elMissCount.appendChild(activeSpan);
-
-    let displayFactor = 0.85;
-    const reversedHistory = [...history].reverse();
-    reversedHistory.forEach((misses) => {
-        const span = document.createElement('span');
-        span.textContent = misses;
-        span.style.opacity = displayFactor.toFixed(2);
-        span.style.marginRight = '8px';
-        elMissCount.appendChild(span);
-        displayFactor = Math.max(0.1, displayFactor - 0.1);
-    });
-}
-
 function updatePracticeStats(item) {
     const details = getItemWeightDetails(item);
     const history = recentMissHistory[item.english] || [];
@@ -1080,7 +1064,16 @@ function updatePracticeStats(item) {
     const reversedHistory = [...history].reverse();
     let displayFactor = 1.0;
     
-    if (reversedHistory.length === 0) {
+    if (currentRoundMisses > 0) {
+        const liveSpan = document.createElement('span');
+        liveSpan.textContent = currentRoundMisses;
+        liveSpan.style.opacity = "1.00";
+        liveSpan.style.marginRight = '8px';
+        elMissCount.appendChild(liveSpan);
+        displayFactor = 0.90;
+    }
+    
+    if (reversedHistory.length === 0 && currentRoundMisses === 0) {
         const placeholder = document.createElement('span');
         placeholder.textContent = '0';
         elMissCount.appendChild(placeholder);
@@ -1208,7 +1201,7 @@ function selectAnswer(button, selectedItem, questionItem) {
     if (isTypingLocked) return;
     if (selectedItem !== questionItem) {
         currentRoundMisses += 1;
-        updateLiveStatsDisplay();
+        updatePracticeStats(questionItem);
         flashAnswer(button, 'wrong');
         elStatus.textContent = `Try again. Missed ${currentRoundMisses} time(s) this round.`;
         return;
