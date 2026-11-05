@@ -26,17 +26,14 @@ body {
 .card {
     box-sizing: border-box;
     width: min(760px, 100%);
-    flex: 1 0 auto;
+    flex: 0 0 auto;
     height: 100vh;
     height: 100dvh;
     min-height: 100vh;
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
     padding: clamp(8px, 2.5vh, 30px) 18px;
-    position: relative;
 }
 
 .ranking-section {
@@ -74,25 +71,32 @@ body {
     border-bottom: 1px solid #292929;
     color: #ccc;
     font-size: 0.9rem;
+    transition: opacity 0.2s ease;
 }
 
-.weight-ranking li.item-disabled {
+.weight-ranking li.excluded-row {
     opacity: 0.35;
     text-decoration: line-through;
 }
 
-.ranking-left {
+.ranking-left-group {
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-.ranking-toggle-btn {
-    background: transparent;
-    border: none;
+.exclude-toggle-btn {
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: white;
     cursor: pointer;
-    font-size: 1.1rem;
-    padding: 0 4px;
+    font-size: 0.85rem;
+    padding: 4px 8px;
+    user-select: none;
+}
+.exclude-toggle-btn:hover {
+    border-color: #ffd700;
 }
 
 .ranking-weight {
@@ -101,13 +105,13 @@ body {
 }
 
 .practice-stats {
-    position: absolute;
+    position: fixed;
     top: 44px;
     left: 12px;
     z-index: 1;
     display: grid;
     gap: 5px;
-    width: 240px;
+    width: 220px;
     color: #aaa;
     font-size: 0.75rem;
     text-align: left;
@@ -115,7 +119,7 @@ body {
 }
 
 .mode-switch {
-    position: absolute;
+    position: fixed;
     top: 12px;
     left: 12px;
     z-index: 2;
@@ -168,7 +172,7 @@ body {
 }
 
 .category-filters {
-    position: absolute;
+    position: fixed;
     top: 12px;
     right: 12px;
     z-index: 2;
@@ -213,16 +217,16 @@ body {
     color: #ffd700;
     font-variant-numeric: tabular-nums;
     display: flex;
-    gap: 6px;
+    gap: 4px;
 }
 
 .emoji-zone {
     flex: 1 1 auto;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 100%;
 }
 
 .emoji-display {
@@ -232,7 +236,7 @@ body {
     background: transparent;
     color: inherit;
     cursor: pointer;
-    font-size: min(10rem, 26vh);
+    font-size: 10rem;
     line-height: 1;
 }
 
@@ -429,6 +433,10 @@ body {
 }
 
 @media (max-width: 520px) {
+    .card {
+        padding-right: 10px;
+        padding-left: 10px;
+    }
     .emoji-display {
         font-size: 7rem;
     }
@@ -447,6 +455,10 @@ body {
 }
 
 @media (max-height: 480px) {
+    .card {
+        padding-top: 6px;
+        padding-bottom: 6px;
+    }
     .choice {
         padding: 2px 1px;
     }
@@ -494,30 +506,29 @@ button, input, select, textarea, a {
 </head>
 <body>
 
+<aside class="practice-stats" aria-label="Current vocabulary practice statistics">
+    <div><span>Recent misses</span><strong id="missCount">0</strong></div>
+    <div><span>Avg time</span><strong id="averageTime">-</strong></div>
+    <div><span>Score</span><strong id="itemScore">-</strong></div>
+</aside>
+
+<label class="mode-switch">
+    <span>Choice</span>
+    <input id="modeToggle" type="checkbox" role="switch" aria-label="Use pinyin typing mode" checked>
+    <span>Pinyin</span>
+</label>
+
+<nav class="category-filters" aria-label="Vocabulary categories">
+    <button class="category-toggle" type="button" data-category="food" aria-pressed="true">食物</button>
+    <button class="category-toggle" type="button" data-category="travel" aria-pressed="true">旅行</button>
+    <button class="category-toggle" type="button" data-category="numbers" aria-pressed="true">数字</button>
+</nav>
+
 <div class="card">
-    <aside class="practice-stats" aria-label="Current vocabulary practice statistics">
-        <div><span>Recent misses</span><strong id="missCount">0</strong></div>
-        <div><span>Avg time</span><strong id="averageTime">-</strong></div>
-        <div><span>Score</span><strong id="itemScore">-</strong></div>
-    </aside>
-
-    <label class="mode-switch">
-        <span>Choice</span>
-        <input id="modeToggle" type="checkbox" role="switch" aria-label="Use pinyin typing mode" checked>
-        <span>Pinyin</span>
-    </label>
-
-    <nav class="category-filters" aria-label="Vocabulary categories">
-        <button class="category-toggle" type="button" data-category="food" aria-pressed="true">食物</button>
-        <button class="category-toggle" type="button" data-category="travel" aria-pressed="true">旅行</button>
-        <button class="category-toggle" type="button" data-category="numbers" aria-pressed="true">数字</button>
-    </nav>
-
     <div class="emoji-zone">
         <button id="emojiDisplay" class="emoji-display" type="button" aria-label="Reveal the English word" aria-expanded="false"></button>
         <div id="englishLabel" class="english-label" aria-live="polite"></div>
     </div>
-    
     <div class="input-area">
         <div id="choices" class="choices" aria-label="Choose the matching Chinese vocabulary"></div>
         <div id="typingPanel" class="typing-panel">
@@ -665,10 +676,10 @@ function loadExclusions() {
 }
 
 const selectedCategories = loadSelectedCategories();
-const itemExclusions = loadExclusions();
+const excludedItems = loadExclusions();
 
 function getAvailableItems() {
-    return vocabularyItems.filter(item => selectedCategories[item.category] && !itemExclusions[item.english]);
+    return vocabularyItems.filter(item => selectedCategories[item.category] && !excludedItems[item.english]);
 }
 
 function shuffleDeck(array) {
@@ -789,84 +800,83 @@ function getItemWeightDetails(item) {
 }
 
 function renderWeightRanking() {
-    const rankingList = document.getElementById('weightRanking');
-    rankingList.replaceChildren();
-
-    vocabularyItems
-        .filter(item => selectedCategories[item.category])
+    const activeItems = vocabularyItems.filter(item => selectedCategories[item.category]);
+    const ranking = activeItems
         .map(item => ({ item, ...getItemWeightDetails(item) }))
-        .sort((first, second) => first.appearances - second.appearances || second.weight - first.weight)
-        .forEach(({ item, appearances, averageAnswerTimeSeconds, score }) => {
-            const isExcluded = !!itemExclusions[item.english];
-            const row = document.createElement('li');
-            if (isExcluded) row.className = 'item-disabled';
-
-            const leftDiv = document.createElement('div');
-            leftDiv.className = 'ranking-left';
-
-            const toggleBtn = document.createElement('button');
-            toggleBtn.type = 'button';
-            toggleBtn.className = 'ranking-toggle-btn';
-            toggleBtn.textContent = isExcluded ? '🔴' : '🟢';
-            toggleBtn.addEventListener('click', () => toggleItemVisibility(item.english));
-
-            const nameSpan = document.createElement('span');
-            nameSpan.textContent = item.english;
-
-            leftDiv.append(toggleBtn, nameSpan);
-
-            const weightSpan = document.createElement('span');
-            weightSpan.className = 'ranking-weight';
-            
-            const timeStr = appearances > 0 ? `${averageAnswerTimeSeconds}s` : '-';
-            weightSpan.textContent = `${timeStr} · ${appearances}/10 · Sc: ${score}`;
-
-            row.append(leftDiv, weightSpan);
-            rankingList.appendChild(row);
+        .sort((first, second) => {
+            const firstEx = excludedItems[first.item.english] ? 1 : 0;
+            const secondEx = excludedItems[second.item.english] ? 1 : 0;
+            if (firstEx !== secondEx) return firstEx - secondEx;
+            return first.appearances - second.appearances || second.weight - first.weight;
         });
+
+    const rankingList = document.getElementById('weightRanking');
+    rankingList.replaceChildren(...ranking.map(({ item, appearances, averageAnswerTimeSeconds, score }) => {
+        const row = document.createElement('li');
+        if (excludedItems[item.english]) {
+            row.className = 'excluded-row';
+        }
+
+        const leftGroup = document.createElement('div');
+        leftGroup.className = 'ranking-left-group';
+
+        const toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.className = 'exclude-toggle-btn';
+        toggleBtn.textContent = excludedItems[item.english] ? '🔴' : '🟢';
+        toggleBtn.addEventListener('click', () => toggleItemExclusion(item.english));
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = item.english;
+
+        leftGroup.append(toggleBtn, nameSpan);
+
+        const weightSpan = document.createElement('span');
+        weightSpan.className = 'ranking-weight';
+        const displayTime = appearances > 0 ? `${averageAnswerTimeSeconds}s` : '-';
+        weightSpan.textContent = `${displayTime} · ${appearances}/10 · Sc: ${score}`;
+
+        row.append(leftGroup, weightSpan);
+        return row;
+    }));
 }
 
-function toggleItemVisibility(englishName) {
-    const matchingItemsInActiveCats = vocabularyItems.filter(item => selectedCategories[item.category]);
-    const activeCount = matchingItemsInActiveCats.filter(item => !itemExclusions[item.english]).length;
-
-    if (!itemExclusions[englishName] && activeCount === 1) {
-        document.getElementById('status').textContent = 'Keep at least one item unmuted in active categories.';
-        return;
-    }
-
-    if (itemExclusions[englishName]) {
-        delete itemExclusions[englishName];
+function toggleItemExclusion(englishName) {
+    if (excludedItems[englishName]) {
+        delete excludedItems[englishName];
     } else {
-        itemExclusions[englishName] = true;
+        const matchingItem = vocabularyItems.find(i => i.english === englishName);
+        const siblingsInCat = vocabularyItems.filter(i => i.category === matchingItem.category && !excludedItems[i.english]);
+        if (siblingsInCat.length <= 1 && selectedCategories[matchingItem.category]) {
+            const fallbackAvailable = vocabularyItems.some(i => selectedCategories[i.category] && i.english !== englishName && !excludedItems[i.english]);
+            if (!fallbackAvailable) {
+                elStatus.textContent = 'Keep at least one vocabulary word active overall.';
+                return;
+            }
+        }
+        excludedItems[englishName] = true;
     }
-
     try {
-        localStorage.setItem(exclusionStorageKey, JSON.stringify(itemExclusions));
+        localStorage.setItem(exclusionStorageKey, JSON.stringify(excludedItems));
     } catch {}
-
-    renderWeightRanking();
 
     if (!getAvailableItems().includes(currentItem)) {
         currentItem = chooseNextItem();
-        updateCard();
-    } else {
-        updatePracticeStats(currentItem);
     }
+    updateCard();
 }
 
 function chooseNextItem(previousItem) {
     const availableItems = getAvailableItems();
     if (availableItems.length === 0) return vocabularyItems[0];
-    
     const candidates = availableItems.filter(item => item !== previousItem);
-    const targetPool = candidates.length > 0 ? candidates : availableItems;
+    const pool = candidates.length > 0 ? candidates : availableItems;
     
-    const leastAppearances = Math.min(...targetPool.map(item => answerTimes[item.english].durations.length));
-    const weightedCandidates = targetPool
+    const leastAppearances = Math.min(...pool.map(item => answerTimes[item.english].durations.length));
+    const weightedCandidates = pool
         .filter(item => answerTimes[item.english].durations.length === leastAppearances)
         .map(item => ({ item, ...getItemWeightDetails(item) }));
-        
+    
     const totalWeight = weightedCandidates.reduce((total, selection) => total + selection.weight, 0);
     let randomWeight = Math.random() * totalWeight;
 
@@ -879,10 +889,7 @@ function chooseNextItem(previousItem) {
     return weightedCandidates[weightedCandidates.length - 1].item;
 }
 
-let preferredTypingMode = true;
-let isTypingMode = true;
-let isTypingLocked = false;
-let typedPinyin = '';
+let currentItem = chooseNextItem();
 let questionStartedAt = 0;
 let currentRoundMisses = 0;
 const answerFlashTimers = new WeakMap();
@@ -898,8 +905,10 @@ const elModeToggle = document.getElementById('modeToggle');
 const elTypingPanel = document.getElementById('typingPanel');
 const elTypedPinyin = document.getElementById('typedPinyin');
 const elLetterKeyboard = document.getElementById('letterKeyboard');
-
-let currentItem = chooseNextItem();
+let isTypingMode = false;
+let preferredTypingMode = true; // Set to true by default as requested
+let isTypingLocked = false;
+let typedPinyin = '';
 
 function normalizePinyin(value) {
     return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s/g, '');
@@ -977,7 +986,10 @@ function enterPinyinLetter(letter, button) {
         isTypingLocked = true;
         const penalty = Math.max(1, 6 - typedPinyin.length);
         currentRoundMisses += penalty;
-        updatePracticeStats(currentItem);
+        
+        // IMMEDIATE UPDATE OF RECENT MISSES ELEMENT DURING TYPING ERROR
+        updateLiveStatsDisplay();
+        
         flashAnswer(button, 'wrong');
         elStatus.textContent = `Pinyin incorrect (+${penalty} Misses). Switching to Choice...`;
         
@@ -1038,24 +1050,57 @@ document.querySelectorAll('.category-toggle').forEach(button => {
     button.addEventListener('click', () => toggleCategory(button.dataset.category));
 });
 
+// New auxiliary function to instantly render the current round misses at the front of history sequence
+function updateLiveStatsDisplay() {
+    const history = recentMissHistory[currentItem.english] || [];
+    elMissCount.replaceChildren();
+
+    // Show the active running round misses right now in full opacity
+    const liveSpan = document.createElement('span');
+    liveSpan.textContent = currentRoundMisses;
+    liveSpan.style.opacity = "1.0";
+    liveSpan.style.marginRight = '8px';
+    liveSpan.style.fontWeight = 'bold';
+    elMissCount.appendChild(liveSpan);
+
+    // Show the previous history trails behind it
+    let displayFactor = 0.7;
+    const reversedHistory = [...history].reverse();
+    reversedHistory.forEach((misses) => {
+        const span = document.createElement('span');
+        span.textContent = misses;
+        span.style.opacity = displayFactor.toFixed(2);
+        span.style.marginRight = '8px';
+        elMissCount.appendChild(span);
+        displayFactor = Math.max(0.1, displayFactor - 0.1);
+    });
+}
+
 function updatePracticeStats(item) {
     const details = getItemWeightDetails(item);
-    const history = recentMissHistory[item.english] ? [...recentMissHistory[item.english]] : [];
-    
-    if (item === currentItem && currentRoundMisses > 0) {
-        history.push(currentRoundMisses);
-        if (history.length > 10) history.shift();
-    }
+    const history = recentMissHistory[item.english] || [];
     
     elMissCount.replaceChildren();
+    
     const reversedHistory = [...history].reverse();
     let displayFactor = 1.0;
     
-    if (reversedHistory.length === 0) {
+    if (reversedHistory.length === 0 && currentRoundMisses === 0) {
         const placeholder = document.createElement('span');
         placeholder.textContent = '0';
         elMissCount.appendChild(placeholder);
     } else {
+        // If there's an active non-zero failure this round, prepend it live
+        if (currentRoundMisses > 0) {
+            const liveSpan = document.createElement('span');
+            liveSpan.textContent = currentRoundMisses;
+            liveSpan.style.opacity = "1.0";
+            liveSpan.style.marginRight = '8px';
+            liveSpan.style.fontWeight = 'bold';
+            elMissCount.appendChild(liveSpan);
+            displayFactor = 0.7;
+        }
+
         reversedHistory.forEach((misses) => {
             const span = document.createElement('span');
             span.textContent = misses;
@@ -1130,7 +1175,10 @@ function updateCard() {
     elChoices.replaceChildren();
 
     const availablePool = getAvailableItems();
-    if (availablePool.length === 0) return;
+    if (availablePool.length === 0) {
+        elStatus.textContent = 'No cards available. Please enable an item below.';
+        return;
+    }
 
     const distractors = availablePool.filter(item => item !== questionItem);
     shuffleDeck(distractors);
@@ -1176,8 +1224,11 @@ function selectAnswer(button, selectedItem, questionItem) {
     if (isTypingLocked) return;
     if (selectedItem !== questionItem) {
         currentRoundMisses += 1;
+        
+        // IMMEDIATE UPDATE OF RECENT MISSES ELEMENT DURING MULTIPLE CHOICE SELECTION ERROR
+        updateLiveStatsDisplay();
+        
         flashAnswer(button, 'wrong');
-        updatePracticeStats(questionItem);
         elStatus.textContent = `Try again. Missed ${currentRoundMisses} time(s) this round.`;
         return;
     }
@@ -1188,7 +1239,7 @@ function selectAnswer(button, selectedItem, questionItem) {
 
 renderCategoryFilters();
 renderLetterKeyboard();
-setInputMode(true);
+updateInputMode();
 updateCard();
 </script>
 
