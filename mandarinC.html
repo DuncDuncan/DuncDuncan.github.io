@@ -304,14 +304,20 @@ body {
     font-size: 1.4rem;
 }
 
-.letter-keyboard {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: clamp(3px, 0.8vh, 6px);
+.keyboard-container {
+    position: relative;
     width: 50vw;
     max-width: 320px;
     align-self: flex-end;
     margin-left: auto;
+    touch-action: none;
+}
+
+.letter-keyboard {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(3px, 0.8vh, 6px);
+    width: 100%;
 }
 
 .letter-key {
@@ -328,6 +334,7 @@ body {
     font: inherit;
     font-size: 1.1rem;
     text-transform: uppercase;
+    pointer-events: auto;
 }
 
 @media (hover: hover) {
@@ -352,6 +359,16 @@ body {
 
 .letter-key.wrong {
     animation: answer-wrong 900ms ease-in-out;
+}
+
+.swipe-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
 }
 
 .choice {
@@ -442,6 +459,19 @@ body {
     color: #aaa;
 }
 
+@media (min-width: 768px) {
+    .keyboard-container {
+        width: 100%;
+        max-width: 600px;
+        align-self: center;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .letter-keyboard {
+        grid-template-columns: repeat(10, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 520px) {
     .card {
         padding-right: 10px;
@@ -478,7 +508,7 @@ body {
     .typing-panel {
         gap: 4px;
     }
-    .letter-keyboard {
+    .keyboard-container {
         width: 50vw;
         max-width: 240px;
     }
@@ -544,7 +574,10 @@ button, input, select, textarea, a {
         <div id="choices" class="choices" aria-label="Choose the matching Chinese vocabulary"></div>
         <div id="typingPanel" class="typing-panel">
             <div id="typedPinyin" class="typed-pinyin" aria-live="polite"></div>
-            <div id="letterKeyboard" class="letter-keyboard" aria-label="Pinyin letter keyboard"></div>
+            <div id="keyboardContainer" class="keyboard-container">
+                <div id="letterKeyboard" class="letter-keyboard" aria-label="Pinyin letter keyboard"></div>
+                <canvas id="swipeCanvas" class="swipe-canvas"></canvas>
+            </div>
         </div>
     </div>
     <div id="status" class="status" role="status" aria-live="polite"></div>
@@ -597,7 +630,7 @@ const vocabularyItems = [
     { english: "Panda", emoji: "🐼", chinese: "熊猫", pinyin: "xióng māo", phonetic: "shyong maow" },
     { english: "Tiger", emoji: "🐅", chinese: "老虎", pinyin: "lǎo hǔ", phonetic: "laow hoo" },
     { english: "Lion", emoji: "🦁", chinese: "狮子", pinyin: "shī zi", phonetic: "shir dzuh" },
-    { english: "Camel", emoji: "🐫", chinese: "骆驼", pinyin: "luò tuo", phonetic: "lwaw twaw" },
+    { english: "Camel", emoji: "🐫", chinese: "骆驼", pinyin: "luò tuo", phonetic: "luwaw tuwaw" },
     { english: "Yak", emoji: "🐂", chinese: "牦牛", pinyin: "máo niú", phonetic: "maow nyoh" },
     { english: "Elephant", emoji: "🐘", chinese: "大象", pinyin: "dà xiàng", phonetic: "dah shyahng" },
     { english: "Rabbit", emoji: "🐇", chinese: "兔子", pinyin: "tù zi", phonetic: "too dzuh" },
@@ -729,7 +762,7 @@ function loadAnswerTimes() {
                     .filter(duration => Number.isFinite(duration) && duration >= 0)
                     .slice(-10)
                     .map(duration => Math.min(duration, maxTrackedAnswerTimeMs))
-                : []
+                : [];
             const averageMs = durations.length
                 ? durations.reduce((total, duration) => total + duration, 0) / durations.length
                 : 0;
@@ -917,10 +950,18 @@ const elModeToggle = document.getElementById('modeToggle');
 const elTypingPanel = document.getElementById('typingPanel');
 const elTypedPinyin = document.getElementById('typedPinyin');
 const elLetterKeyboard = document.getElementById('letterKeyboard');
+const canvas = document.getElementById('swipeCanvas');
+const ctx = canvas.getContext('2d');
+
 let isTypingMode = false;
 let preferredTypingMode = true;
 let isTypingLocked = false;
 let typedPinyin = '';
+
+// Swipe gesture state tracking variables
+let isSwiping = false;
+let swipePoints = [];
+let keyPositions = {};
 
 function normalizePinyin(value) {
     return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s/g, '');
@@ -942,17 +983,32 @@ function renderTypedPinyin() {
     elTypedPinyin.textContent = displayedPinyin || '...';
 }
 
+function isDesktopLayout() {
+    return window.innerWidth >= 768;
+}
+
 function renderLetterKeyboard() {
     elLetterKeyboard.replaceChildren();
-    const rows = [
-        { letters: '  QW', startColumn: 1 },
-        { letters: 'ERTY', startColumn: 1 },
-        { letters: 'UIOP', startColumn: 1 },
-        { letters: 'ASDF', startColumn: 1 },
-        { letters: 'GHJK', startColumn: 1 },
-        { letters: 'LZXC', startColumn: 1 },
-        { letters: 'VBNM', startColumn: 1 }
-    ];
+    
+    let rows = [];
+    if (isDesktopLayout()) {
+        rows = [
+            { letters: 'QWERTYUIOP', startColumn: 1 },
+            { letters: 'ASDFGHJKL', startColumn: 1 },
+            { letters: 'ZXCVBNM', startColumn: 2 }
+        ];
+    } else {
+        rows = [
+            { letters: '  QW', startColumn: 1 },
+            { letters: 'ERTY', startColumn: 1 },
+            { letters: 'UIOP', startColumn: 1 },
+            { letters: 'ASDF', startColumn: 1 },
+            { letters: 'GHJK', startColumn: 1 },
+            { letters: 'LZXC', startColumn: 1 },
+            { letters: 'VBNM', startColumn: 1 }
+        ];
+    }
+
     rows.forEach((row, rowIndex) => {
         Array.from(row.letters).forEach((letter, letterIndex) => {
             if (letter === ' ') return;
@@ -964,11 +1020,162 @@ function renderLetterKeyboard() {
             button.setAttribute('aria-label', letter);
             button.style.gridRow = String(rowIndex + 1);
             button.style.gridColumn = String(row.startColumn + letterIndex);
-            button.addEventListener('click', () => enterPinyinLetter(letter, button));
+            
+            // Allow pointer events to go through cleanly
+            button.addEventListener('click', () => {
+                if (!isSwiping && swipePoints.length < 2) {
+                    enterPinyinLetter(letter, button);
+                }
+            });
             elLetterKeyboard.appendChild(button);
         });
     });
+    
+    // Recalculate dimensions for coordinates trace tracking matrix mapping
+    setTimeout(updateKeyBoundingBoxes, 100);
 }
+
+function updateKeyBoundingBoxes() {
+    keyPositions = {};
+    const containerRect = document.getElementById('keyboardContainer').getBoundingClientRect();
+    
+    canvas.width = containerRect.width;
+    canvas.height = containerRect.height;
+    
+    const keys = elLetterKeyboard.querySelectorAll('.letter-key');
+    keys.forEach(key => {
+        const rect = key.getBoundingClientRect();
+        const char = key.dataset.letter.toLowerCase();
+        keyPositions[char] = {
+            x: rect.left - containerRect.left + rect.width / 2,
+            y: rect.top - containerRect.top + rect.height / 2,
+            width: rect.width,
+            height: rect.height,
+            element: key
+        };
+    });
+}
+
+// Hook gesture pointer engine handlers
+const kbContainer = document.getElementById('keyboardContainer');
+
+kbContainer.addEventListener('pointerdown', (e) => {
+    if (!isTypingMode || isTypingLocked) return;
+    isSwiping = true;
+    swipePoints = [];
+    kbContainer.setPointerCapture(e.pointerId);
+    addSwipePoint(e);
+});
+
+kbContainer.addEventListener('pointermove', (e) => {
+    if (!isSwiping) return;
+    addSwipePoint(e);
+    drawSwipeTrail();
+});
+
+kbContainer.addEventListener('pointerup', (e) => {
+    if (!isSwiping) return;
+    isSwiping = false;
+    kbContainer.releasePointerCapture(e.pointerId);
+    
+    if (swipePoints.length >= 2) {
+        processSwipeWord();
+    }
+    
+    // Clear line vectors trail
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+});
+
+function addSwipePoint(e) {
+    const containerRect = kbContainer.getBoundingClientRect();
+    const x = e.clientX - containerRect.left;
+    const y = e.clientY - containerRect.top;
+    swipePoints.push({ x, y, time: performance.now() });
+}
+
+function drawSwipeTrail() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (swipePoints.length < 2) return;
+    
+    ctx.beginPath();
+    ctx.moveTo(swipePoints[0].x, swipePoints[0].y);
+    for (let i = 1; i < swipePoints.length; i++) {
+        ctx.lineTo(swipePoints[i].x, swipePoints[i].y);
+    }
+    
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = '#ffd700';
+    ctx.stroke();
+}
+
+function processSwipeWord() {
+    // Generate character sequence from vector geometric collision intersection intersections
+    let sequence = [];
+    let lastChar = '';
+    
+    swipePoints.forEach(point => {
+        // Find if pointer is intersecting any key hitbox coordinates area
+        for (const [char, pos] of Object.entries(keyPositions)) {
+            const dx = point.x - pos.x;
+            const dy = point.y - pos.y;
+            if (Math.abs(dx) < pos.width * 0.45 && Math.abs(dy) < pos.height * 0.45) {
+                if (char !== lastChar) {
+                    sequence.push(char);
+                    lastChar = char;
+                }
+                break;
+            }
+        }
+    });
+    
+    if (sequence.length === 0) return;
+    
+    const targetWord = normalizePinyin(currentItem.pinyin);
+    
+    // Closed-vocabulary validation check matching routine
+    // Validates if sequence contains all target word characters in roughly correct trajectory flow sequence
+    let targetIdx = 0;
+    sequence.forEach(char => {
+        if (targetIdx < targetWord.length && char === targetWord[targetIdx]) {
+            targetIdx++;
+        }
+    });
+    
+    const isMatch = (targetIdx === targetWord.length);
+    
+    if (isMatch) {
+        typedPinyin = targetWord;
+        renderTypedPinyin();
+        isTypingLocked = true;
+        elStatus.textContent = 'Swipe Match!';
+        
+        // Flash all key positions
+        Array.from(targetWord).forEach(char => {
+            if (keyPositions[char]) flashAnswer(keyPositions[char].element, 'correct');
+        });
+        
+        setTimeout(() => completeAnswer(currentItem), 350);
+    } else {
+        const penalty = 3;
+        currentRoundMisses += penalty;
+        updatePracticeStats(currentItem);
+        elStatus.textContent = `Swipe did not match word path (+${penalty} Misses)`;
+        
+        // Flash first character key element red as indication reminder helper
+        const firstTargetChar = targetWord[0];
+        if (keyPositions[firstTargetChar]) {
+            flashAnswer(keyPositions[firstTargetChar].element, 'wrong');
+        }
+    }
+}
+
+window.addEventListener('resize', () => {
+    renderLetterKeyboard();
+});
 
 function setInputMode(typingMode) {
     isTypingMode = typingMode;
@@ -1181,6 +1388,8 @@ function updateCard() {
         button.addEventListener('click', () => selectAnswer(button, item, questionItem));
         elChoices.appendChild(button);
     });
+    
+    setTimeout(updateKeyBoundingBoxes, 150);
 }
 
 elModeToggle.addEventListener('change', updateInputMode);
