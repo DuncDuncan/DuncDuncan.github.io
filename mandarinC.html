@@ -307,10 +307,10 @@ body {
 .letter-keyboard {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-template-rows: repeat(7, minmax(0, 1fr));
     gap: clamp(3px, 0.8vh, 6px);
     width: 50vw;
-    max-width: 400px;
+    max-width: 320px;
+    align-self: flex-end;
     margin-left: auto;
 }
 
@@ -480,7 +480,7 @@ body {
     }
     .letter-keyboard {
         width: 50vw;
-        max-width: 300px;
+        max-width: 240px;
     }
     .letter-key {
         font-size: 0.85rem;
@@ -605,13 +605,13 @@ const vocabularyItems = [
     { english: "Peacock", emoji: "🦚", chinese: "孔雀", pinyin: "kǒng què", phonetic: "kong chyweh" },
     { english: "Chili", emoji: "🌶️", chinese: "辣椒", pinyin: "là jiāo", phonetic: "lah jyaow" },
     { english: "Shrimp", emoji: "🍤", chinese: "虾", pinyin: "xiā", phonetic: "shyah" },
-    { english: "Orange", emoji: "🍊", chinese: "橙子", pinyin: "chuhng dzuh" },
+    { english: "Orange", emoji: "🍊", chinese: "橙子", pinyin: "chéng zi", phonetic: "chuhng dzuh" },
     { english: "Grapes", emoji: "🍇", chinese: "葡萄", pinyin: "pú táo", phonetic: "poo taow" },
     { english: "Strawberry", emoji: "🍓", chinese: "草莓", pinyin: "cǎo méi", phonetic: "tsaow may" },
     { english: "Watermelon", emoji: "🍉", chinese: "西瓜", pinyin: "xī guā", phonetic: "shee gwah" },
     { english: "Pineapple", emoji: "🍍", chinese: "菠萝", pinyin: "bō luó", phonetic: "baw law" },
     { english: "Peach", emoji: "🍑", chinese: "桃子", pinyin: "táo zi", phonetic: "taow dzuh" },
-    { english: "Potato", emoji: "🥔", chinese: "土豆", pinyin: "too doh" },
+    { english: "Potato", emoji: "🥔", chinese: "土豆", pinyin: "tǔ dòu", phonetic: "too doh" },
     { english: "Corn", emoji: "🌽", chinese: "玉米", pinyin: "yù mǐ", phonetic: "yoo mee" },
     { english: "Carrot", emoji: "🥕", chinese: "胡萝卜", pinyin: "hú luó bo", phonetic: "hoo lwaw bwoh" },
     { english: "Cucumber", emoji: "🥒", chinese: "黄瓜", pinyin: "huáng guā", phonetic: "hwahng gwah" },
@@ -729,7 +729,7 @@ function loadAnswerTimes() {
                     .filter(duration => Number.isFinite(duration) && duration >= 0)
                     .slice(-10)
                     .map(duration => Math.min(duration, maxTrackedAnswerTimeMs))
-                : [];
+                : []
             const averageMs = durations.length
                 ? durations.reduce((total, duration) => total + duration, 0) / durations.length
                 : 0;
@@ -943,26 +943,19 @@ function renderTypedPinyin() {
 }
 
 function renderLetterKeyboard() {
-    const keyboardLayout = [
-        ['', '', 'V', 'P'],
-        ['F', 'Q', 'R', 'K'],
-        ['C', 'M', 'B', 'T'],
-        ['X', 'W', 'L', 'J'],
-        ['Y', 'Z', 'S', 'D'],
-        ['O', 'G', 'H', 'U'],
-        ['E', 'A', 'N', 'I']
+    elLetterKeyboard.replaceChildren();
+    const rows = [
+        { letters: '  QW', startColumn: 1 },
+        { letters: 'ERTY', startColumn: 1 },
+        { letters: 'UIOP', startColumn: 1 },
+        { letters: 'ASDF', startColumn: 1 },
+        { letters: 'GHJK', startColumn: 1 },
+        { letters: 'LZXC', startColumn: 1 },
+        { letters: 'VBNM', startColumn: 1 }
     ];
-
-    keyboardLayout.forEach((row, rowIndex) => {
-        row.forEach((letter, colIndex) => {
-            if (rowIndex === 0 && colIndex < 2) {
-                // Keep the first two cells empty in the top row
-                const spacer = document.createElement('div');
-                spacer.style.gridRow = String(rowIndex + 1);
-                spacer.style.gridColumn = String(colIndex + 1);
-                elLetterKeyboard.appendChild(spacer);
-                return;
-            }
+    rows.forEach((row, rowIndex) => {
+        Array.from(row.letters).forEach((letter, letterIndex) => {
+            if (letter === ' ') return;
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'letter-key';
@@ -970,7 +963,7 @@ function renderLetterKeyboard() {
             button.textContent = letter;
             button.setAttribute('aria-label', letter);
             button.style.gridRow = String(rowIndex + 1);
-            button.style.gridColumn = String(colIndex + 1);
+            button.style.gridColumn = String(row.startColumn + letterIndex);
             button.addEventListener('click', () => enterPinyinLetter(letter, button));
             elLetterKeyboard.appendChild(button);
         });
